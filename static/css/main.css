@@ -1,0 +1,307 @@
+body {
+    font-family: modeseven;
+    color: var(--fg);
+    overflow: hidden;
+    font-size: 14px;
+}
+
+h1, h2, h3, h4, h5, h6 {
+    padding-top: 0;
+    margin-top: 0;
+}
+
+#main {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: flex;
+    background: var(--bg-light);
+    flex-direction: column;
+}
+
+#windows {
+    display: flex;
+    width: 100%;
+    height: 100%;
+    position: relative;
+}
+
+#scroll-tolerance {
+    width: 150%;
+    height: 100%;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+#left {
+    width: max-content;
+    height: 100%;
+    display: flex;
+    align-items: center;
+}
+
+#right {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#header {
+    width: 100%;
+    background: var(--accent);
+    padding: 2px 8px;
+    z-index: 10;
+    user-select: none;
+    display: flex;
+    box-sizing: border-box;
+}
+
+#header #clock {
+    position: absolute;
+    left: 50%;
+    transform: translateX(-50%);
+}
+
+#header #account {
+    margin-left: auto;
+}
+
+#header > * {
+    position: relative;
+}
+
+#account .popup {
+    margin-top: 10px;
+    background: var(--bg);
+    position: absolute;
+    float: right;
+    right: -2px;
+    user-select: auto;
+    border-radius: 6px;
+    box-sizing: border-box;
+    width: 200px;
+    box-shadow: 0px 8px 24px var(--shadow);
+    transform: translateX(100%);
+    opacity: 0;
+    transition: 0.5s;
+    z-index: 0;
+}
+
+.popup .popup-item {
+    padding: 16px;
+    box-sizing: border-box;
+    transition: 0.5s;
+}
+
+.popup .popup-item:last-child {
+    border-bottom-left-radius: 6px;
+    border-bottom-right-radius: 6px;
+}
+
+.popup.active .popup-item:hover {
+    transition: 0.2s;
+    background: var(--accent);
+}
+
+.popup hr {
+    border: none;
+    height: 1px;
+    background: var(--bg-light);
+    margin: 0 0 8px 0;
+}
+
+.popup.active {
+    transform: translateX(0) !important;
+    opacity: 1 !important;
+    z-index: 10 !important;
+}
+
+#username {
+    padding: 16px;
+}
+
+#icons {
+    display: flex;
+    background: rgba(68, 71, 90, 0.7);
+    height: max-content;
+    width: max-content;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 24px 12px;
+    box-sizing: border-box;
+    border-radius: 64px;
+    margin: 0 16px;
+    transition: 0.5s;
+    z-index: 1000;
+    user-select: none;
+}
+
+#icons.hidden {
+    transition: 0.5s;
+    transform: translateX(calc(-100% - 16px));
+}
+
+.icon {
+    width: 48px;
+    height: 48px;
+    background: none;
+    box-sizing: border-box;
+    border-radius: 9px;
+}
+
+.icon > * {
+    width: 100%;
+    height: 100%;
+}
+
+.icon:not(:last-child) {
+    margin-bottom: 16px;
+}
+
+@keyframes icons-start {
+    from {
+        transform: translateX(calc(-100% - 16px));
+    }
+
+    to {
+        transform: translateX(0%);
+    }
+}
+
+.window {
+    background: var(--bg);
+    color: var(--fg);
+    width: max-content;
+    display: flex;
+    flex-direction: column;
+    border-radius: 6px;
+    min-width: 500px;
+    max-width: 100%;
+    position: absolute;
+    animation: 0.5s ease-out 0s 1 popup;
+    box-shadow: 0px 8px 24px var(--shadow);
+    margin: auto;
+}
+
+.window .header {
+    width: 100%;
+    padding: 8px 16px;
+    background: var(--accent-soft);
+    box-sizing: border-box;
+    border-top-left-radius: 6px;
+    border-top-right-radius: 6px;
+    display: flex;
+    align-items: center;
+}
+
+.window .close {
+    margin-left: 16px;
+    user-select: none;
+    color: var(--red);
+    background: var(--fg);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    width: 16px;
+    border-radius: 3px;
+}
+
+.header .balls {
+    display: flex;
+}
+
+.balls .ball {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.balls .ball:not(:last-child) {
+    margin-right: 8px;
+}
+
+.ball:nth-child(1) {
+    background: var(--red);
+}
+
+.ball:nth-child(2) {
+    background: var(--yellow);
+}
+
+.ball:nth-child(3) {
+    background: var(--green);
+}
+
+.header .title {
+    margin-left: auto;
+    user-select: none;
+}
+
+.window .content {
+    width: 100%;
+    padding: 16px;
+    box-sizing: border-box;
+    border-bottom-left-radius: 3px;
+    border-bottom-right-radius: 3px;
+    resize: both;
+    min-width: 100%;
+    user-select: auto;
+    position: relative;
+    min-height: 100% !important;
+}
+
+.window .content * {
+    min-height: max-content !important;
+}
+
+#main.dragged {
+    user-select: none !important;
+}
+
+@keyframes popup {
+    0% {
+        transform: scale(0, 0);
+    }
+    100% {
+        transform: scale(1, 1);
+    }
+}
+
+.telegram {
+    position: absolute;
+    bottom: 16px;
+    right: 16px;
+    z-index: 3;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
+    align-items: flex-end;
+    width: max-content;
+    max-width: 50%;
+}
+
+.telegram .content {
+    z-index: 4;
+    padding: 16px;
+    box-sizing: border-box;
+    background: var(--bg);
+    color: var(--fg);
+    border-radius: 6px;
+    position: relative;
+    box-shadow: 0px 8px 24px var(--shadow);
+}
+
+.telegram .profile {
+    width: 192px;
+    height: 192px;
+    top: 0;
+    transform: translateY(calc(-100% + 32px));
+    position: absolute;
+}

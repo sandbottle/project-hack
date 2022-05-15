@@ -1,0 +1,292 @@
+<html>
+    <head>
+        <title></title>
+
+        <link rel = "stylesheet" href = "/css/style.css">
+        <link rel = "stylesheet" href = "/css/index.css">
+        <script src = "/js/jquery.js"></script>
+        <script src = "/js/jquery-ui.js"></script>
+        <script src="https://unpkg.com/typeit"></script>
+    </head>
+
+    <body>
+        <div id = "main">
+            <div id = "background"></div>
+            <canvas id = "canvas"></canvas>
+            <div id = "overlay"></div>
+
+            <div id = "container">
+                <p>As cool as movie, as acurate as manual.</p>
+
+                <div id = "form">
+                    <h2 class = "green">Start your <span class = "glitch green" data-text = "hacking">hacking</span> journey.</h2>
+                    <p>Powered by sandbox-environtment, project HACK allowing you to exploring the deep world of digital security safe and soundly.</p>
+                
+                    <p>Type <span class = "yellow">register</span> on the Terminal to create you an account, and type <span class = "yellow">login</span> to authenticate yourself if you have one.</p>
+                </div>
+            </div>
+
+            <div id = "side">
+                <div class = "window" id = "terminal-window">
+                    <div class = "header">
+                        <div class = "balls">
+                            <div class="ball"></div>
+                            <div class="ball"></div>
+                            <div class="ball"></div>
+                        </div>
+
+                        <div class = "title">Terminal</div>
+                    </div>
+
+                    <div class="content">
+                        <div id = "terminal-content">
+                        </div>
+
+                        <div id = "terminal-input-parent">
+                            <span class = "green">> </span>
+                            <input id = "terminal-input" placeholder = "Waiting your command ...">
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <script src = "/js/particle.js"></script>
+        <script>
+            new TypeIt('#terminal-content',{
+	            strings: ['<span class = "green">Welcome to the terminal!</span>', '<div class = "terminal-line">Type <span class = "yellow">help</span> to get more information about commands.</div>'],
+                cursor: false,
+                speed: 20,
+                afterComplete: function() {
+                    $('#terminal-input-parent').css('display', 'flex')
+                }
+            }).go()
+
+            window.onload = function() {
+                Particles.init({
+                    selector: '#canvas',
+                    color: '#50fa7b',
+                    maxParticles: 60,
+                    connectParticles: true,
+                    responsive: [
+                        {
+                        breakpoint: 768,
+                        options: {
+                            maxParticles: 30
+                        }
+                        }, {
+                        breakpoint: 375,
+                        options: {
+                            maxParticles: 20
+                        }
+                        }
+                    ]
+                })
+            }
+
+            inputMode = null
+            metaData = {}
+            $('#terminal-input').on('keypress', function(keyId) {
+                function clear() {
+                    $('#terminal-content').html('')
+                }
+
+                function write(text) {
+                    $('#terminal-content').append(`<div class = "terminal-line">${text}</div>`)
+                }
+
+                function edit(number, text, append = true, useHighligth = true) {
+                    if (number == 'last') {
+                        if (useHighligth) {
+                            text = `<span class = "green">${text}</span>`
+                        } 
+
+                        if (append) {
+                            text = $('#terminal-content>*:last-child').html() + text
+                        }
+
+                        $('#terminal-content>*:last-child').html(`${text}`)
+                    } else {
+                        if (useHighligth) {
+                            text = `<span class = "green">${text}</span>`
+                        } 
+
+                        if (append) {
+                            text = $('#terminal-content>*:last-child') + text
+                        }
+
+                        $(`#terminal-content>*:nth-child(${x})`).html(`${text}`)
+                    }
+                }
+
+                if (keyId.which == 13) {
+                    command = $(this).val()
+                    $(this).val('')
+
+                    if (inputMode == null) {
+                        write(command)
+
+                        switch (command) {
+                            case 'login': 
+                                clear()
+                                write('Please enter your username: ')
+                                $('#terminal-input').attr('placeholder', 'Enter your username here ...')
+                                inputMode = 'login'
+                                break
+                            case 'register':
+                                clear()
+                                write('<span class = "green">Welcome new user!</span>')
+                                write('Please pick a new username (lowercase and uppercase letters, numbers, and underscores are allowed. Minimum length is 4 characters): ')
+                                $('#terminal-input').attr('placeholder', 'Enter your username here ...')
+                                inputMode = 'register'
+                                break
+                        }
+                    } else {
+                        switch (inputMode) {
+                            case 'login':
+                                if (metaData.username == undefined) {
+                                    edit('last', command)
+                                    metaData.username = command
+
+                                    write('Please enter your password: ')
+                                    $('#terminal-input').attr({'type': 'password', 'placeholder': 'Enter your password here ...'})
+                                } else {
+                                    edit('last', '*'.repeat(command.length))
+                                    metaData.password = command
+
+                                    $.post('/account/login', metaData, function(data, status) {
+                                        console.log(status)
+                                        if (data.status == 'success') {
+                                            write('<span class = "green">Success! Redirecting you ...</span>')
+                                            setTimeout(() => {
+                                                window.location.href = '/'
+                                            }, 1000);
+                                        } else {
+                                            write(`<span class = "red">Failed to login: ${data.message}. Type login again to retry.</span>`)
+                                        }
+                                    })
+
+                                    metaData = {}
+                                    $('#terminal-input').attr({'type': 'text', 'placeholder': 'Waiting your command ...'})
+                                    inputMode = null
+                                }
+
+                                break
+                            case 'register':
+                                var processIndex = Object.keys(metaData).length
+                                if (processIndex == 0) {
+                                    edit('last', command)
+                                    if (/^[a-zA-Z0-9_]*$/.test(command) && command.length >= 4) {
+                                        write('Please enter your new password (minimum length is 8 characters): ')
+                                        $('#terminal-input').attr({'type': 'password', 'placeholder': 'Enter your password here ...'})
+                                        metaData.username = command
+                                    } else {
+                                        write('<span class = "red">Invalid username. Please try again.</span>')
+                                        write('Please pick a new username (lowercase and uppercase letters, numbers, and underscores are allowed. Minimum length is 4 characters): ')
+                                    }
+                                } else if (processIndex == 1) {
+                                    edit('last', '*'.repeat(command.length))
+                                    if (command.length >= 8) {
+                                        write('Please enter your valid email address: ')
+                                        $('#terminal-input').attr({'type': 'text', 'placeholder': 'Enter your email address here ...'})
+                                        metaData.password = command
+                                    } else {
+                                        write('<span class = "red">Invalid password. Please try again.</span>')
+                                        write('Please enter your new password (minimum length is 8 characters): ')
+                                    }
+                                } else if (processIndex == 2) {
+                                    edit('last', command)
+                                    metaData.email = command
+
+                                    $.post('/account/register', metaData, function(data, status) {
+                                        if (data.status == 'success') {
+                                            write('<span class = "green">Success! Redirecting you ...</span>')
+                                            setTimeout(() => {
+                                                window.location.href = '/'
+                                            }, 1000)
+                                        } else {
+                                            write(`<span class = "red">Failed to login: ${data.message}</span>`)
+                                        }
+                                    })
+
+                                    metaData = {}
+                                    $('#terminal-input').attr({'type': 'text', 'placeholder': 'Waiting your command ...'})
+                                    inputMode = null
+                                }
+
+                                break
+                        }
+                    }
+
+                    $('#terminal-content').scrollTop($("#terminal-content")[0].scrollHeight)
+                }
+            })
+
+            used = []
+            function createFakeWindow() {
+                var id = Math.round(Math.random() * 6969)
+                var width = Math.floor(Math.random() * (500 - 350) + 350)
+                var content = ['<h1 class = "red">ERROR!</h1>', '<h1 class = "green">SUCCESSFULLY INVECTING TARGET</h1>', '<h1>TRACKING</h1>', '<h1 class = "yellow">WARNING!</h1>', '<h1>QUERYING DATABASE</h1>', '<h1>SANDBOTTLE! </h1>']
+                var positions = [
+                    {top: '50%', left: '10%'}, {top: '10%', left: '50%'}, {top: '10%', left: '10%'}, {top: '50%', left: '50%'}, {bottom: '50%', right: '10%'}, {bottom: '10%', right: '50%'}, {bottom: '10%', right: '10%'}, {bottom: '50%', right: '50%'},
+                    {top: '50%', right: '10%'}, {top: '10%', right: '50%'}, {top: '10%', right: '10%'}, {top: '50%', right: '50%'}, {bottom: '50%', left: '10%'}, {bottom: '10%', left: '50%'}, {bottom: '10%', left: '10%'}, {bottom: '50%', left: '50%'}
+                ]
+
+                pos = null
+                while (pos == null) {
+                    var prePos = positions[Math.round(Math.random() * (positions.length - 1))]
+                    if (!used.includes(prePos)) {
+                        pos = prePos
+                        used.push(prePos)
+
+                        callback()
+                    }
+                }
+
+                function callback() {
+                    $('#background').append(`
+                    <div class="window" id = "${id}">
+                        <div class="header">
+                            <div class = "balls">
+                                <div class="ball"></div>
+                                <div class="ball"></div>
+                                <div class="ball"></div>
+                            </div>
+                        
+                            <div class = "title">Lorem ipsum</div>
+                        </div>
+
+                        <div class = "content">
+                            <span>${content[Math.round(Math.random() * (content.length - 1))]}</span>
+                        </div>
+                    </div>`)
+
+                    pos['min-width'] = `${width}px`
+                    pos['width'] = `${width}px`
+
+                    if (pos['right']) {
+                        pos['float'] = 'right',
+                        pos['text-align'] = 'right'
+                    }
+
+                    $(`#${id}`).css(pos)
+
+                    setTimeout(() => {
+                        $(`#${id}`).addClass('closed')
+                        setTimeout(() => {
+                            createFakeWindow()
+                            $(`#${id}`).remove()
+                            used.splice(used.indexOf(pos), 1)
+                        }, (Math.floor(Math.random() * (5 - 3) + 3) * 1000) + 500)
+                    }, Math.floor(Math.random() * (25 - 10) + 10) * 1000)
+                }
+            }
+
+            for (x = 0; x <= 2; x++) {
+                setTimeout(() => {
+                    createFakeWindow()
+                }, 5000 * x)
+            }
+        </script>
+    </body>
+</html>

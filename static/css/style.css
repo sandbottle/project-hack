@@ -1,0 +1,83 @@
+@font-face {
+    font-family: modeseven;
+    src: url(/fonts/modeseven.ttf);
+}
+
+:root {
+    --bg: #282a36;
+    --bg-light: #383b48;
+    --shadow: #30333d;
+    --fg: #f8f8f2;
+    --accent: #ff79c6;
+    --accent-soft: #f78ec9;
+    --red: #ff5555;
+    --yellow: #f1fa8c;
+    --green: #50fa7b;
+}
+
+.input {
+    font: inherit;
+    border: 0;
+    margin: 0;
+    padding: 8px 12px;
+    background: var(--bg-light);
+    color: var(--fg);
+    border-radius: 6px;
+}
+
+.input:focus {
+    outline: none;
+}
+
+.button {
+    font: inherit;
+    border: 0;
+    margin: 0;
+    padding: 8px 12px;
+    background: var(--accent);
+    color: var(--fg);
+    border-radius: 6px;
+}
+
+.input-box {
+    display: flex;
+    flex-direction: column;
+    margin-bottom: 16px;
+}
+
+.input.box.h {
+    flex-direction: row;
+}
+
+.label {
+    margin-bottom: 8px;
+}
+
+[data-title]:hover:after {
+    opacity: 1;
+    transition: all 0.1s ease 0.5s;
+    visibility: visible;
+    transition-delay: 2s;
+}
+
+[data-title]:after {
+    content: attr(data-title);
+    white-space: nowrap;
+    background: var(--accent-soft);
+    color: var(--fg);
+    position: absolute;
+    left: calc(100% + 18px);
+    top: 50%;
+    transform: translateY(-50%);
+    padding: 6px 9px;
+    z-index: 99999;
+    visibility: hidden;
+    opacity: 0;
+    border-radius: 3px;
+    transition: 0.2s;
+    font-size: small;
+}
+
+[data-title] {
+    position: relative;
+}

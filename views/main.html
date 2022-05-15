@@ -1,0 +1,140 @@
+<html>
+    <head>
+        <title></title>
+
+        <link rel = "stylesheet" href = "/css/style.css">
+        <link rel = "stylesheet" href = "/css/main.css">
+        <script src = "/js/jquery.js"></script>
+        <script src = "/js/jquery-ui.js"></script>
+        <link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css"/>
+    </head>
+
+    <body>
+        <main id = "main">
+            <header id = "header">
+                <div onclick = "$('#icons').toggleClass('hidden')">Applications</div>
+                <div id = "clock">12:30</div>
+                <div id = "account">
+                    <span onclick = "$('#account .popup').toggleClass('active')">Account</span>
+                    <div class = "popup">
+                        <div id = "username"><b><%= it.user %></b></div>
+                        <hr>
+
+                        <div class = "popup-item">Settings</div>
+                        <div class = "popup-item" onclick = "engine.logout()">Logout</div>
+                    </div>
+                </div>
+            </header>
+
+            <div class = "telegram">
+                <img src = "/images/users/body0.png" class = "profile">
+                <div class = "content">
+                    <h3>You got a telegram!</h3>
+                    <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque ornare rutrum arcu eget tristique. </span>
+                </div>
+            </div>
+
+            <div id = "windows">
+                <div id = "scroll-tolerance"></div>
+                <div id="left">
+                    <div id = "icons" class = "hidden">
+                        <% it.installed.forEach(function(element) { %>
+                            <div class = "icon" initial = "<%= element.initial %>" data-title = "<%= element.name %>">
+                                <img src = "<%= element.icon %>">
+                            </div>
+                        <% }) %>
+                        <div class = "icon" id = "menu" data-title = "Menu"></div>
+                    </div>
+                </div>
+    
+                <div id = "right"> 
+                    
+                </div>
+            </div>
+        </main>
+
+        <script>
+            class main {
+                constructor() {
+                    this.windows = []
+                    this.renderedWindowContent = []
+
+                    this.toggleListener()
+
+                    var t = this
+                    this.clockInterval = setInterval(() => {
+                        t.updateClock()
+                    }, 1000)
+
+                    this.updateClock()
+
+                    $('.icon:not(#menu)').on('click', function(event) {
+                        var title = $(this).attr('data-title')
+                        $.get(`/applications/${$(this).attr('initial')}`, function(data, status) {
+                            if (data.status == 'success') {
+                                t.createWindow({title: title, content: data.content})
+                            } else {
+                                alert(data.message)
+                            }
+                        })
+                    })
+                }
+
+                updateClock() {
+                    this.date = new Date()
+
+                    $('#clock').html(`${('0' + this.date.getHours()).substr(-2)}:${('0' + this.date.getMinutes()).substr(-2)}:${('0' + this.date.getSeconds()).substr(-2)}`)
+                }
+
+                wsConnect() {
+                    this.ws = new WebSocket('ws://localhost:8080')
+                    this.ws.onopen = function (event) {
+                        this.ws.send('connected!')
+                    }
+
+                    this.ws.onmessage = function (event) {
+                        $('#container').append(event.data)
+                    }
+
+                    $('#submit').click(function() {
+                        this.ws.send($('input').val())
+                    })
+                }
+
+                logout() {
+                    $.get('/account/logout', function(data, status) {
+                        window.location.href = '/'
+                    })
+                }
+
+                toggleListener() {
+                    $('.window').draggable({
+                        handle: '.header',
+                        opacity: 0.5,
+                        scroll: false,
+                        containment: $('#scroll-tolerance'),
+                        stack: '.window'
+                    })
+
+                    var t = this
+                    $('.close').on('click', function() {
+                        t.destroyWindow(this)
+                    })
+                }
+
+                createWindow(options) {
+                    $('#right').append(`<div class = "window"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${options.content}</div></div>`)
+                    this.toggleListener()
+                }
+
+                destroyWindow(window) {
+                    if (window) {
+                        $(window).closest('.window').remove()
+                    }
+                }
+            }
+
+            var engine = new main()
+        </script>
+    </body>
+</html>

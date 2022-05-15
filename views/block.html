@@ -1,0 +1,67 @@
+<html>
+    <head>
+        <title></title>
+        <link rel = "stylesheet" href = "/css/block.css">
+        <script src = "/js/jquery.js"></script>
+        <script src = "/js/jquery-ui.js"></script>
+    </head>
+
+    <div class = "block-parent">
+        <div class = "real">
+            <div class = "block">If <input> == <input></div>
+            <div class = "block-drop-container"></div>
+        </div>
+
+        <div class = "fake">
+
+        </div>
+    </div>
+
+    <div class = "block-parent">
+        <div class = "real">
+            <div class = "block">If <input> == <input></div>
+            <div class = "block-drop-container"></div>
+        </div>
+
+        <div class = "fake">
+            <div class = "block-parent">
+                <div class = "real">
+                    <div class = "block">If <input> == <input></div>
+                    <div class = "block-drop-container"></div>
+                </div>
+        
+                <div class = "fake">
+        
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>    
+        function applyDropable() {
+            $('.block-parent').draggable({
+                opacity: 0.5,
+                scroll: false,
+                handle: '.real',
+                cancel: '.fake'.parent()
+            })
+
+            $('.block-drop-container').droppable({
+                tolerance: 'pointer',
+                hoverClass: 'hovered',
+                drop: function( event, ui ) {
+                    ui.draggable.remove()
+
+                    var fake = $(this).parent().parent().children('.fake')
+
+                    fake.append(ui.draggable)
+                    ui.draggable.css({'top': 0, 'left': 0})
+
+                    applyDropable()
+                }
+            })
+        }
+
+        applyDropable()
+    </script>
+</html>
