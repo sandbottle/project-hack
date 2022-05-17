@@ -1,3 +1,70 @@
-<div>
-    <input class = "input">
+<style>
+    #filter {
+        width: 100%;
+        margin-top: 8px;
+    }
+
+    #filter-container {
+        margin-top: 16px;
+    }
+
+    .loader {
+        margin-top: 8px;
+    }
+
+    .loader:not(:last-child) {
+        margin-bottom: 8px;
+    }
+</style>
+
+<div style = "min-width: 600px" id = "file-manager-window">
+    <h2>File Manager</h2>
+
+    <div style = "display: flex">
+        <label>Disk usage: </label>
+        <label style = "margin-left: auto;"><%= it.diskUsage %>/<%= it.maxDisk %> MB</label>
+    </div>
+    <div class = "loader">
+        <div class = "loader-inner" style = "width: <%= (it.diskUsage / it.maxDisk) * 100 %>%"></div>
+    </div>
+
+    <div style = "display: flex">
+        <label>Inodes: </label>
+        <label style = "margin-left: auto;"><%= it.inodes %>/<%= it.maxInodes %></label>
+    </div>
+    <div class = "loader">
+        <div class = "loader-inner" style = "width: <%= (it.inodes / it.maxInodes) * 100 %>%"></div>
+    </div>
+
+    <div id = "filter-container">
+        <label for = "filter">Search: </label>
+        <input class = "input" id = "filter" placeholder = "File name ...">
+    </div>
+
+    <table class = "table">
+        <thead>
+            <tr>
+                <th>Name</th>
+                <th>Size</th>
+                <th>Number of file(s)</th>
+            </tr>
+        </thead>
+
+        <tbody>
+            <% var keys = Object.keys(it.files) %>
+            <% if (keys.length != 0) { %>
+                <% for (x = 0; x <= keys.length - 1; x++) { %>
+                    <tr initial = "<%= keys[x] %>">
+                        <td><%= keys[x] %></td>
+                        <td><%= it.files[keys[x]].size %></td>
+                        <td><%= it.files[keys[x]].number %></td>
+                    </tr>
+                <% } %>
+            <% } else { %>
+                <tr>
+                    <td colspan = "999"><center>Nothing here.</center></td>
+                </tr>
+            <% } %>
+        </tbody>
+    </table>
 </div>

@@ -1,0 +1,116 @@
+<style>
+    #file {
+        width: 100%;
+        margin: 16px 0;
+    }
+
+    .loader-inner {
+        width: 0%;
+    }
+
+    #clone-status {
+        display: none;
+        margin-bottom: 16px
+    }
+
+    #clone-used, #already-full {
+        display: none
+    }
+
+    #already-full {
+        margin-bottom: 16px;
+    }
+</style>
+
+<div id = "cloner-window">
+    <h2>Cloner</h2>
+
+    <div id = "clone-body">
+        <div id = "already-full">
+            <center>Your storage already full.</center>
+        </div>
+
+        <div id = "clone-status">
+            <label id = "clone-label"></label>
+            <div class = "loader">
+                <div class = "loader-inner" id = "clone-loader"></div>
+            </div>
+        </div>
+
+        <% var keys = Object.keys(it.files) %>
+        <% if (keys.length != 0) { %>
+            <label>Select file to clone: </label>
+
+            <select id = "file" class = "input">
+                <% for (x = 0; x <= keys.length - 1; x++) { %>
+                    <option value = "<%= keys[x] %>"><%= keys[x] %></option>
+                <% } %>
+            </select>
+        <% } else { %>
+            <tr>
+                <div><center>Nothing to clone.</center></div>
+            </tr>
+        <% } %>
+
+        <% if (keys.length != 0) { %>
+            <div>
+                <label>Make </label> <input class = "input" id = "clone-number" type = "number" min = "1" max = "<%= it.clonerLevel * 10 %>" value = "1"> <label> clone(s).</label>
+            </div>
+
+            <button class = "button" onclick = "startClone()">Start</button>
+        <% } %>
+    </div>
+
+    <div id = "clone-used">
+        <center>Can't be used, still cloning others now.</center>
+    </div>
+</div>
+
+<script>
+    engine.wsSend({status: 'success', from: 'cloner', message: 'check'})
+
+    engine.wsListen('cloner', function(data) {
+        $('#already-full').hide()
+        if (data.status == 'success') {
+            if (data.message == 'started') {
+                $('#clone-status').show()
+                $('#clone-label').html(`Cloning <b>${$('#clone-number').val()} ${$('#file').val()}</b> file(s) ...`)
+                
+                var animationState
+                if ($('#clone-number').val() != 1) {animationState = 'infinite'} 
+                $('#clone-loader').css('animation', `loading ${data.duration}s ${animationState || ''} linear`)
+                $('#clone-loader').on('webkitAnimationEnd webkitAnimationIteration', function() {
+                    if (engine.windows['file-manager']) {
+                        var vmFile = $(`#file-manager-window tr[initial="${$('#file').val()}"] td:nth-child(3)`)
+                        vmFile.html(parseInt(vmFile.html()) + 1)
+                    }
+                })
+            } else if (data.message == 'finished') {
+                $('#clone-loader').off()
+
+                $('#clone-status').hide()
+                $('#clone-label').html('')
+                $('#clone-loader').css('animation', 'none')
+
+                $('#clone-body').show()
+                $('#clone-used').hide()
+            } else {
+                if (data.isUsed) {
+                    $('#clone-body').hide()
+                    $('#clone-used').show()
+                } else {
+                    $('#clone-body').show()
+                    $('#clone-used').hide()
+                }
+            }
+        } else {
+            if (data.message == 'storage') {
+                $('#already-full').show()
+            }
+        }
+    })
+
+    function startClone() {
+        engine.wsSend({status: 'success', from: 'cloner', message: 'startclone', data: {file: $('#file').val(), number: $('#clone-number').val()}})
+    }
+</script>

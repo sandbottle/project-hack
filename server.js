@@ -44,6 +44,7 @@ require('./engine/ws')
 
 // routes
 app.use(require('./routes/main').routes()) 
+app.use(require('./routes/applications').routes()) 
 
 // statics
 app.use(static(path.join(__dirname, 'static')))

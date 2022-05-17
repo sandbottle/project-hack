@@ -10,6 +10,30 @@
     </head>
 
     <body>
+        <div id = "under-attack">
+            <div id = "under-attack-window">
+                <div class = "window not-draggable">
+                    <div class = "header">
+                        <div class = "balls">
+                            <div class="ball"></div>
+                            <div class="ball"></div>
+                            <div class="ball"></div>
+                        </div>
+    
+                        <div class = "title">Under Attack!</div>
+                    </div>
+    
+                    <div class="content">
+                        <center>
+                            <h1>You are attacked by someone!</h1>
+
+                            <button class = "button">Close this window and take action</button>
+                        </center>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <main id = "main">
             <header id = "header">
                 <div onclick = "$('#icons').toggleClass('hidden')">Applications</div>
@@ -26,6 +50,7 @@
                 </div>
             </header>
 
+            <!--
             <div class = "telegram">
                 <img src = "/images/users/body0.png" class = "profile">
                 <div class = "content">
@@ -33,16 +58,18 @@
                     <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque ornare rutrum arcu eget tristique. </span>
                 </div>
             </div>
+            -->
 
             <div id = "windows">
                 <div id = "scroll-tolerance"></div>
                 <div id="left">
                     <div id = "icons" class = "hidden">
-                        <% it.installed.forEach(function(element) { %>
-                            <div class = "icon" initial = "<%= element.initial %>" data-title = "<%= element.name %>">
-                                <img src = "<%= element.icon %>">
+                        <% var keys = Object.keys(it.installed) %>
+                        <% for (x = 0; x <= keys.length - 1; x++) { %>
+                            <div class = "icon" initial = "<%= keys[x] %>" data-title = "<%= it.installed[keys[x]].name %>">
+                                <img src = "<%= it.installed[keys[x]].icon %>">
                             </div>
-                        <% }) %>
+                        <% } %>
                         <div class = "icon" id = "menu" data-title = "Menu"></div>
                     </div>
                 </div>
@@ -56,8 +83,10 @@
         <script>
             class main {
                 constructor() {
-                    this.windows = []
+                    this.windows = {}
                     this.renderedWindowContent = []
+
+                    this.wsListener = {}
 
                     this.toggleListener()
 
@@ -66,13 +95,22 @@
                         t.updateClock()
                     }, 1000)
 
+                    this.highest = 100
+
                     this.updateClock()
+                    this.wsConnect()
 
                     $('.icon:not(#menu)').on('click', function(event) {
                         var title = $(this).attr('data-title')
-                        $.get(`/applications/${$(this).attr('initial')}`, function(data, status) {
+                        var initial = $(this).attr('initial')
+
+                        $.get(`/applications/${initial}`, function(data, status) {
                             if (data.status == 'success') {
-                                t.createWindow({title: title, content: data.content})
+                                if (!t.windows[initial]) {
+                                    t.createWindow({title: title, content: data.content, initial: initial})
+                                } else {
+                                    t.windows[initial].css('z-index', t.highest++)
+                                }
                             } else {
                                 alert(data.message)
                             }
@@ -88,17 +126,33 @@
 
                 wsConnect() {
                     this.ws = new WebSocket('ws://localhost:8080')
+
+                    var t = this
                     this.ws.onopen = function (event) {
-                        this.ws.send('connected!')
+                        t.wsSend({status: 'success', from: 'client', message: 'connected'})
                     }
 
-                    this.ws.onmessage = function (event) {
-                        $('#container').append(event.data)
+                    this.ws.onmessage = function(event) {
+                        var parsed = JSON.parse(event.data)
+
+                        if (t.wsListener[parsed.to]) {
+                            t.wsListener[parsed.to](parsed)
+                        }
                     }
 
-                    $('#submit').click(function() {
-                        this.ws.send($('input').val())
+                    this.wsListen('client', function(data) {
+                        if (data.message == 'underattack') {
+                            $('#under-attack').show()
+                        }
                     })
+                }
+
+                wsSend(message) {
+                    this.ws.send(JSON.stringify(message))
+                }
+
+                wsListen(to, cb) {
+                    this.wsListener[to] = cb
                 }
 
                 logout() {
@@ -108,7 +162,7 @@
                 }
 
                 toggleListener() {
-                    $('.window').draggable({
+                    $('.window:not(.not-draggable)').draggable({
                         handle: '.header',
                         opacity: 0.5,
                         scroll: false,
@@ -123,13 +177,17 @@
                 }
 
                 createWindow(options) {
-                    $('#right').append(`<div class = "window"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${options.content}</div></div>`)
+                    var window = $(`<div class = "window" initial = "${options.initial}"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${options.content}</div></div>`)
+
+                    $('#right').append(window)
+                    this.windows[options.initial] = window
                     this.toggleListener()
                 }
 
                 destroyWindow(window) {
                     if (window) {
                         $(window).closest('.window').remove()
+                        delete this.windows[$(window).closest('.window').attr('initial')]
                     }
                 }
             }

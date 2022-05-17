@@ -42,6 +42,7 @@ h1, h2, h3, h4, h5, h6 {
     height: 100%;
     display: flex;
     align-items: center;
+    position: absolute;
 }
 
 #right {
@@ -304,4 +305,41 @@ h1, h2, h3, h4, h5, h6 {
     top: 0;
     transform: translateY(calc(-100% + 32px));
     position: absolute;
+}
+
+#under-attack {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    box-shadow: inset 16px 16px 64px red;
+    background: rgba(0, 0, 0, 0);
+    z-index: 1000;
+    box-sizing: border-box;
+    animation: under-attack 0.5s alternate infinite;
+    display: none;
+}
+
+#under-attack-window {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: max-content;
+    height: max-content;
+}
+
+#under-attack-window * {
+    position: relative;
+}
+
+@keyframes under-attack {
+    from {
+        box-shadow: inset 0px 0px 0px red;
+    } 
+    
+    to {
+        box-shadow: inset 16px 16px 64px red;
+    }
 }

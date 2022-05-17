@@ -81,3 +81,51 @@
 [data-title] {
     position: relative;
 }
+
+table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 16px 0;
+}
+
+th {
+    background: var(--bg-light);
+    padding: 8px;
+    border: 1px solid var(--shadow);
+}
+
+td {
+    padding: 8px;
+    border: 1px solid var(--shadow);
+}
+
+tr {
+    border: 1px solid var(--shadow);
+}
+
+.loader {
+    width: 100%;
+    background: var(--bg-light);
+    padding: 6px;
+    box-sizing: border-box;
+    border-radius: 6px;
+}
+
+.loader-inner {
+    height: 12px;
+    border-radius: 3px;
+    background: var(--accent-soft);
+    width: 50%;
+    transition: 0.5s;
+    box-sizing: border-box;
+}
+
+@keyframes loading {
+    from {
+        width: 0%;
+    }
+
+    to {
+        width: 100%;
+    }
+}
