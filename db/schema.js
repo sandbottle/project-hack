@@ -58,7 +58,8 @@ var user = new mongoose.Schema({
             'file-manager': {name: 'File Manager', icon: '/images/file-manager.png', settings: {}},
             'terminal': {name: 'Terminal', icon: '/images/terminal.png', settings: {}},
             'text-editor': {name: 'Text Editor', icon: '/images/text-editor.png', settings: {}},
-            'cloner': {name: 'Cloner', icon: '/images/cloner.png', settings: {level: 1}}
+            'cloner': {name: 'Cloner', icon: '/images/cloner.png', settings: {level: 1}},
+            'browser': {name: 'Browser', icon: '/images/browser.png', settings: {}}
         }
     },
     diskUsage: {
@@ -85,7 +86,7 @@ var user = new mongoose.Schema({
         type: Object, 
         required: true,
         default: {
-            // 'scanner': {size: 10, contentLocation: '/test', number: 2},
+            'scanner': {size: 10, contentLocation: '/test', number: 2},
             // 'the doom': {size: 75, contentLocation: '/doom', number: 1},
             'test': {size: 1, contentLocation: null, number: 1}
         }
@@ -99,6 +100,34 @@ var user = new mongoose.Schema({
         type: Boolean,
         required: true,
         default: false
+    },
+    isAttacking: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    attackTimeout: {
+        type: Date,
+        default: null
+    },
+    online: {
+        type: Boolean,
+        required: true,
+        default: false
+    },
+    karma: {
+        type: Number,
+        required: true,
+        default: 0
+    },
+    systemDesign: {
+        type: Array,
+        required: true,
+        default: [
+            null, null, null,
+            null, {type: 'filesystem'}, null,
+            null, {type: 'filesystem'}, null
+        ]
     }
 })
 

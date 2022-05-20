@@ -7,6 +7,7 @@ const path = require('path')
 
 const mongoose = require('mongoose')
 const MongooseStore = require('koa-session-mongoose')
+const gamehelper = require('./engine/gamefunctions')
 
 // db
 mongoose.connect('mongodb://localhost:27017/projecthack', {useNewUrlParser: true, useUnifiedTopology: true})
@@ -39,8 +40,9 @@ const sessConfig = {
 app.use(session(sessConfig, app))
 app.use(body())
 
-// websocket engine
-require('./engine/ws')
+// websocket servers
+global.mainServer = require('./engine/mainserver')
+global.battleServer = require('./engine/battleserver')
 
 // routes
 app.use(require('./routes/main').routes()) 
@@ -49,4 +51,8 @@ app.use(require('./routes/applications').routes())
 // statics
 app.use(static(path.join(__dirname, 'static')))
 
-app.listen(4040)
+app.listen(4040, function() {
+    var h = new gamehelper()
+    h.cleanup()
+    console.log('Server started.')
+})

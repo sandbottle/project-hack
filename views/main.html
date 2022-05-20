@@ -6,11 +6,13 @@
         <link rel = "stylesheet" href = "/css/main.css">
         <script src = "/js/jquery.js"></script>
         <script src = "/js/jquery-ui.js"></script>
-        <link rel="stylesheet" type="text/css" href="http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css"/>
+        <script src = "/js/commandline.js"></script>
+        <link rel = "stylesheet" href = "http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css"/>
+        <link rel = "stylesheet" href = "/fontello/css/fontello.css">
     </head>
 
     <body>
-        <div id = "under-attack">
+        <div id = "under-attack" class = "hidden">
             <div id = "under-attack-window">
                 <div class = "window not-draggable">
                     <div class = "header">
@@ -27,10 +29,23 @@
                         <center>
                             <h1>You are attacked by someone!</h1>
 
-                            <button class = "button">Close this window and take action</button>
+                            <button class = "button" onclick = "$('#under-attack').addClass('hidden')">Close this window and take action</button>
                         </center>
                     </div>
                 </div>
+            </div>
+        </div>
+
+        <div id = "attack-timer">
+            Attacking time left: 02:00
+        </div>
+
+        <div id = "disconnected" class = "hidden">
+            <div>
+                <center>
+                    <h1 class = "glitch" data-text = "DISCONNECTED">DISCONNECTED</h1>
+                    <h2>You have been disconnected from the server. Refresh this page to reconnect.</h2>
+                </center>
             </div>
         </div>
 
@@ -68,6 +83,8 @@
                         <% for (x = 0; x <= keys.length - 1; x++) { %>
                             <div class = "icon" initial = "<%= keys[x] %>" data-title = "<%= it.installed[keys[x]].name %>">
                                 <img src = "<%= it.installed[keys[x]].icon %>">
+                            
+                                <div class = "ball"></div>
                             </div>
                         <% } %>
                         <div class = "icon" id = "menu" data-title = "Menu"></div>
@@ -85,6 +102,7 @@
                 constructor() {
                     this.windows = {}
                     this.renderedWindowContent = []
+                    this.attackInterval = null
 
                     this.wsListener = {}
 
@@ -104,19 +122,12 @@
                         var title = $(this).attr('data-title')
                         var initial = $(this).attr('initial')
 
-                        $.get(`/applications/${initial}`, function(data, status) {
-                            if (data.status == 'success') {
-                                if (!t.windows[initial]) {
-                                    t.createWindow({title: title, content: data.content, initial: initial})
-                                } else {
-                                    t.windows[initial].css('z-index', t.highest++)
-                                }
-                            } else {
-                                alert(data.message)
-                            }
-                        })
+                        t.createWindow({title: title, initial: initial})
+                        $(this).children('.ball').addClass('active')
                     })
                 }
+
+                // clocks
 
                 updateClock() {
                     this.date = new Date()
@@ -124,12 +135,42 @@
                     $('#clock').html(`${('0' + this.date.getHours()).substr(-2)}:${('0' + this.date.getMinutes()).substr(-2)}:${('0' + this.date.getSeconds()).substr(-2)}`)
                 }
 
+                startAttackClock() {
+                    var time = {
+                        minutes: 2,
+                        seconds: 0
+                    }
+
+                    this.attackInterval = setInterval(() => {
+                        $('#attack-timer').html(`Time available: ${time.minutes}:${('0' + time.seconds).substr(-2)}`)
+                        if (time.seconds == 0) {
+                            time.minutes -= 1
+                            time.seconds = 59
+                        
+                            if (time.minutes > 0) {
+                                clearInterval(this.interval)
+                                $('#attack-timer').hide()
+                            }
+                        }
+
+                        time.seconds -= 1
+                    }, 1000)
+                }
+
+                // websocket (default)
+
                 wsConnect() {
                     this.ws = new WebSocket('ws://localhost:8080')
 
                     var t = this
                     this.ws.onopen = function (event) {
                         t.wsSend({status: 'success', from: 'client', message: 'connected'})
+                    }
+
+                    this.ws.onclose = function (event) {
+                        setTimeout(() => {
+                            $('#disconnected').removeClass('hidden')
+                        }, 5000) // for prevent toggling this when user reload.
                     }
 
                     this.ws.onmessage = function(event) {
@@ -141,8 +182,22 @@
                     }
 
                     this.wsListen('client', function(data) {
-                        if (data.message == 'underattack') {
-                            $('#under-attack').show()
+                        if (data.message == 'under_attack') {
+                            $('#under-attack').removeClass('hidden')
+                            $('#attack-timer').show()
+
+                            var date = new Date()
+                            document.cookie = `room=${data.data.room}; expires = ${date.setTime(date.getTime() + 120000)}; path=/`
+
+                            t.startAttackClock()
+                            t.bsConnect()
+                        } else if (data.message == 'attack_stopped') {
+                            $('#attack-timer').hide()
+                            $('#under-attack').addClass('hidden')
+
+                            t.bsDisconnect()
+                        } else if (data.message == 'spawned') {
+                            
                         }
                     })
                 }
@@ -154,6 +209,63 @@
                 wsListen(to, cb) {
                     this.wsListener[to] = cb
                 }
+
+                // websocket (battle server)
+
+                bsConnect() {
+                    this.battleServer = new WebSocket('ws://localhost:8081')
+                }
+
+                bsDisconnect() {
+                    this.battleServer.close()
+                }
+
+                bsSend(message) {
+                    this.battleServer.send(JSON.stringify(message))
+                }
+
+                bsListen(cb) {
+                    this.battleServer.onmessage = function(event) {
+                        cb(JSON.parse(event.data))
+                    }
+                }
+
+                // window management
+
+                createWindow(options) {
+                    var t = this
+
+                    $.get(`/applications/${options.initial}`, function(data, status) {
+                        if (data.status == 'success') {
+                            if (!t.windows[options.initial]) {
+                                var window = $(`<div class = "window" initial = "${options.initial}"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${data.content}</div></div>`)
+
+                                $('#right').append(window)
+                                t.windows[options.initial] = window
+                                t.toggleListener()
+                            } else {
+                                t.windows[options.initial].css('z-index', t.highest++)
+                            }
+                        } else {
+                            alert(data.message)
+                        }
+                    })
+                }
+
+                destroyWindow(window) {
+                    if (window) {
+                        var t = this
+
+                        $(window).closest('.window').addClass('hidden')
+                        $(window).closest('.window').on('transitionend oTransitionEnd webkitTransitionEnd', function() {
+                            $(window).closest('.window').remove()
+                            delete t.windows[$(window).closest('.window').attr('initial')]
+                            $(`.icon[initial="${$(window).closest('.window').attr('initial')}"]`).children('.ball').removeClass('active')
+                        })
+                    }
+                }
+
+                // other functions
 
                 logout() {
                     $.get('/account/logout', function(data, status) {
@@ -174,21 +286,6 @@
                     $('.close').on('click', function() {
                         t.destroyWindow(this)
                     })
-                }
-
-                createWindow(options) {
-                    var window = $(`<div class = "window" initial = "${options.initial}"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${options.content}</div></div>`)
-
-                    $('#right').append(window)
-                    this.windows[options.initial] = window
-                    this.toggleListener()
-                }
-
-                destroyWindow(window) {
-                    if (window) {
-                        $(window).closest('.window').remove()
-                        delete this.windows[$(window).closest('.window').attr('initial')]
-                    }
                 }
             }
 

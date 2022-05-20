@@ -1,7 +1,189 @@
-<div>
+<style>
+    #terminal-window {
+        height: 250px;
+        position: relative;
+    }
 
+    #terminal-content {
+        min-width: 100%;
+        display: flex;
+        flex-direction: column;
+        max-height: 100%;
+        overflow-y: auto;
+        box-sizing: border-box;
+        margin-bottom: 36px;
+        height: calc(100% - 16px);
+        max-width: 468px;
+        overflow-x: hidden;
+    }
+
+    #terminal-input-parent {
+        display: flex;
+        width: calc(100% - 32px);
+        margin-top: auto;
+        justify-content: center;
+        align-items: center;
+        position: absolute;
+        left: 0px;
+        bottom: 0px;
+        background: var(--bg);
+        padding-top: 16px;
+    }
+
+    #terminal-input {
+        font: inherit;
+        color: var(--fg);
+        background: var(--bg);
+        width: 100%;
+        border: none;
+        margin-left: 8px;
+    }
+
+    #terminal-input:focus {
+        outline: none;
+    }
+
+    .terminal-line {
+        margin-bottom: 16px;
+        max-width: 100%;
+        word-break: break-all;
+    }
+
+    .green {
+        color: var(--green);
+    }
+
+    .red {
+        color: var(--red);
+    }
+
+    .yellow {
+        color: var(--yellow);
+    }
+
+    [data-typeit-id]::before {
+        display: none !important;
+    }
+
+    #terminal-window {
+        -ms-overflow-style: none;
+        scrollbar-width: none;
+    }
+
+    #terminal-window::-webkit-scrollbar { 
+        display: none;
+    }
+</style>
+
+<div id = "terminal-window">
+    <div id = "terminal-content">
+        <span class = "green">Welcome to the terminal!</span>
+        <div class = "terminal-line">Type <span class = "yellow">help</span> to get more information about commands.</div>
+    </div>
+
+    <div id = "terminal-input-parent">
+        <span class = "green" id = "terminal-cursor">> </span>
+        <input id = "terminal-input" placeholder = "Waiting your command ...">
+    </div>
 </div>
 
 <script>
-    engine.wsSend({status: 'success', from: 'warhorn', message: 'startattack', data: {target: 'manu'}})
+    isAttack = false
+
+    engine.wsListen('terminal', function(data) {
+        if (data.status == 'success') {
+            if (data.message == 'scan_result') {
+                terminal.write('Available user(s) to attack: ')
+                data.data.forEach(function(user) {
+                    terminal.write(`Name: ${user.username} | Karma: ${user.karma} | Inodes: ${user.inodes}`)
+                })
+            }
+        }
+    })
+
+    engine.wsListen('warhorn', function(data) {
+        if (data.status == 'success') {
+            if (data.message == 'attack_started') {
+                isAttack = true
+                terminal.write('<span class = "red">Entering attack mode.</span>')
+
+                $('#terminal-cursor').removeClass('green')
+                $('#terminal-cursor').addClass('red')
+
+                var date = new Date()
+                document.cookie = `room=${data.data.room}; expires = ${date.setTime(date.getTime() + 120000)}; path=/`
+
+                engine.bsConnect()
+                engine.startAttackClock()
+                engine.createWindow({title: 'Target Stats', initial: 'target-stats'})
+
+                engine.bsListen(function(data) {
+                    console.log(data)
+                    switch (data.message) {
+                        case 'spawned':
+                            alert('Success spawning!')
+                            break
+                    }
+                })
+            } else if (data.message == 'attack_timeout') {
+                isAttack = false
+                terminal.write('Attack stopped due the 2 minutes limit')
+
+                $('#terminal-cursor').removeClass('red')
+                $('#terminal-cursor').addClass('green')
+
+                $('#attack-timer').hide()
+
+                engine.bsDisconnect()
+            } else if (data.message == 'attack_stopped') {
+                isAttack = false
+                terminal.write('Attack stopped')
+
+                $('#terminal-cursor').removeClass('red')
+                $('#terminal-cursor').addClass('green')
+
+                $('#attack-timer').hide()
+
+                engine.bsDisconnect()
+            }
+        } else {
+            terminal.write(`Failed to attack: ${data.message}`)
+        }
+    })
+
+    var terminal = new commandLine($('#terminal-input'), $('#terminal-content'))
+    terminal.commands = {
+        help: function() {
+            terminal.write('No help for you, hacker!')
+        },
+        clear: function() {
+            terminal.clear()
+        },
+        spawn: function(argv) {
+            if (argv[0]) {
+                if (isAttack) {
+                    engine.bsSend({status: 'success', message: 'spawn', data: {entityName: 'virus'}})   
+                }
+            } else {
+                terminal.write('<span class = "red">Invalid. Usage: spawn {name}</span>')
+            }
+        },
+        scan: function() {
+            engine.wsSend({status: 'success', from: 'terminal', message: 'scan'})   
+        },
+        warhorn: function(argv) {
+            if (argv[0] && argv[1]) {
+                if (argv[0] == 'start') {
+                    engine.wsSend({status: 'success', from: 'warhorn', message: 'start_attack', data: {target: argv[1]}})
+                } else if (argv[0] == 'stop') {
+                    engine.wsSend({status: 'success', from: 'warhorn', message: 'stop_attack'})
+                }
+            } else {
+                terminal.write('<span class = "red">Invalid. Usage: warhorn {command} {target}</span>')
+            }
+        },
+        default: function(command) {
+            terminal.write(`<span class = "red">Command not found: ${command}</span>`)
+        }
+    }
 </script>

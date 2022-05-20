@@ -1,7 +1,7 @@
 const router = require('koa-router')
 const eta = require('eta')
 const path = require('path')
-const gamehelper = require('../engine/gamehelper')
+const gamehelper = require('../engine/gamefunctions')
 const db = require('../db/schema')
 
 const r = router()

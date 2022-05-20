@@ -1,0 +1,103 @@
+<style>
+    #browser-window {
+        min-width: 700px !important; 
+        min-height: 350px !important;
+        flex-direction: column;
+    }
+
+    #browser-main {
+        width: 100%;
+        height: 100%;
+        background: 100%;
+        position: absolute;
+        top: 0;
+        left: 0;
+    }
+
+    #browser-iframe {
+        border: 0;
+        background: var(--fg);
+        border-bottom-left-radius: 6px;
+        border-bottom-right-radius: 6px;
+    }
+
+    #browser-iframe>* {
+        position: relative
+    }
+
+    #browser-url {
+        width: 100%;
+    }
+
+    #browser-url-parent {
+        width: 100%;
+        align-items: center;
+        display: flex;
+    }
+
+    #browser-header {
+        width: 100%;
+        background: var(--bg-light);
+        display: flex;
+        flex-direction: column;
+    }
+
+    .browser-widget {
+        margin-right: 6px;
+        box-sizing: border-box;
+    }
+
+    #browser-tab {
+        width: 100%;
+        display: flex;
+    }
+
+    .browser-tabs {
+        width: max-content;
+        min-width: 33%;
+
+        padding: 8px 16px;
+
+        background: var(--accent);
+        box-sizing: border-box;
+        
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+    }
+</style>
+
+<div id = "browser-window">
+    <div id = "browser-main">
+        <div id = "browser-header">
+            <div id = "browser-tab">
+                <div class = "browser-tabs">
+                    Hello world
+                </div>
+                <div class = "browser-tabs">
+                    Hello world
+                </div>
+            </div>
+
+            <div id = "browser-url-parent">
+                <div class = "browser-widget">
+                    <i class = "icon-left-open"></i>
+                </div>
+    
+                <div class = "browser-widget">
+                    <i class = "icon-right-open"></i>
+                </div>
+    
+                <div class = "browser-widget">
+                    <i class = "icon-cw"></i>
+                </div>
+    
+                <div class = "browser-widget">
+                    <i class = "icon-home-1"></i>
+                </div>
+    
+                <input class = "input" id = "browser-url" placeholder = "Search or enter address">
+            </div>
+        </div>
+        <iframe id = "browser-iframe" height = "100%" width = "100%" src = "/pages/pages.html"></iframe>
+    </div>
+</div>

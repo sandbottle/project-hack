@@ -67,8 +67,6 @@
 </div>
 
 <script>
-    engine.wsSend({status: 'success', from: 'cloner', message: 'check'})
-
     engine.wsListen('cloner', function(data) {
         $('#already-full').hide()
         if (data.status == 'success') {
@@ -94,23 +92,15 @@
 
                 $('#clone-body').show()
                 $('#clone-used').hide()
-            } else {
-                if (data.isUsed) {
-                    $('#clone-body').hide()
-                    $('#clone-used').show()
-                } else {
-                    $('#clone-body').show()
-                    $('#clone-used').hide()
-                }
             }
         } else {
-            if (data.message == 'storage') {
+            if (data.message == 'storage_too_full') {
                 $('#already-full').show()
             }
         }
     })
 
     function startClone() {
-        engine.wsSend({status: 'success', from: 'cloner', message: 'startclone', data: {file: $('#file').val(), number: $('#clone-number').val()}})
+        engine.wsSend({status: 'success', from: 'cloner', message: 'start_clone', data: {file: $('#file').val(), number: $('#clone-number').val()}})
     }
 </script>
