@@ -1,3 +1,5 @@
+require('dotenv').config()
+
 const koa = require('koa')
 const session = require('koa-session')
 const static = require('koa-static')
@@ -10,7 +12,7 @@ const MongooseStore = require('koa-session-mongoose')
 const gamehelper = require('./engine/gamefunctions')
 
 // db
-mongoose.connect('mongodb://localhost:27017/projecthack', {useNewUrlParser: true, useUnifiedTopology: true})
+mongoose.connect(process.env.MONGO_URL, {useNewUrlParser: true, useUnifiedTopology: true})
 global.store = new MongooseStore()
 
 // eta

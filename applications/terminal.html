@@ -115,16 +115,6 @@
 
                 engine.bsConnect()
                 engine.startAttackClock()
-                engine.createWindow({title: 'Target Stats', initial: 'target-stats'})
-
-                engine.bsListen(function(data) {
-                    console.log(data)
-                    switch (data.message) {
-                        case 'spawned':
-                            alert('Success spawning!')
-                            break
-                    }
-                })
             } else if (data.message == 'attack_timeout') {
                 isAttack = false
                 terminal.write('Attack stopped due the 2 minutes limit')
@@ -132,7 +122,7 @@
                 $('#terminal-cursor').removeClass('red')
                 $('#terminal-cursor').addClass('green')
 
-                $('#attack-timer').hide()
+                engine.stopAttackClock()
 
                 engine.bsDisconnect()
             } else if (data.message == 'attack_stopped') {
@@ -141,8 +131,8 @@
 
                 $('#terminal-cursor').removeClass('red')
                 $('#terminal-cursor').addClass('green')
-
-                $('#attack-timer').hide()
+            
+                engine.stopAttackClock()
 
                 engine.bsDisconnect()
             }
@@ -177,6 +167,8 @@
                     engine.wsSend({status: 'success', from: 'warhorn', message: 'start_attack', data: {target: argv[1]}})
                 } else if (argv[0] == 'stop') {
                     engine.wsSend({status: 'success', from: 'warhorn', message: 'stop_attack'})
+                } else if (argv[0] == 'capture') {
+                    engine.bsSend({status: 'success', message: 'capture', data: {flag: argv[1]}})
                 }
             } else {
                 terminal.write('<span class = "red">Invalid. Usage: warhorn {command} {target}</span>')

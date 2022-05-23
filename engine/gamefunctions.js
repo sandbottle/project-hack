@@ -134,7 +134,7 @@ class helper {
         var t = this
 
         return new Promise(resolve => {
-            db.user.findOne({username: target}, {underAttack: 1, isAttacking: 1}).then(function(result) {
+            db.user.findOne({username: target}, {map: 1, underAttack: 1, isAttacking: 1}).then(function(result) {
                 if (result) {
                     if (!result.underAttack && !result.isAttacking) {
                         var timeout = new Date().getTime() + 120000
@@ -152,17 +152,15 @@ class helper {
                             status: 'success', 
                             timeout: function(cb) {
                                 setTimeout(() => {
-                                    t.stopAttack(target)
+                                    t.stopAttack(username, target)
     
                                     cb()
                                 }, 120000)
                             },
-                            attackServer: function(cb) {
-                                new attackServer({firewall: 100, event: cb})
-                            } 
+                            map: result.map
                         })
                     } else {
-                        resolve({status: 'failed', message: 'underattack'})
+                        resolve({status: 'failed', message: 'under_attack'})
                     }
                 } else {
                     resolve({status: 'failed', message: 'invalid'})

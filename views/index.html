@@ -93,6 +93,7 @@
 
                 function write(text) {
                     $('#terminal-content').append(`<div class = "terminal-line">${text}</div>`)
+                    $('#terminal-content').scrollTop($("#terminal-content")[0].scrollHeight)
                 }
 
                 function edit(number, text, append = true, useHighligth = true) {
@@ -217,8 +218,6 @@
                                 break
                         }
                     }
-
-                    $('#terminal-content').scrollTop($("#terminal-content")[0].scrollHeight)
                 }
             })
 

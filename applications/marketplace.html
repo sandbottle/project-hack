@@ -1,0 +1,178 @@
+<style>
+    #marketplace-window {
+        min-width: 600px;
+    }
+
+    #marketplace-category {
+        width: 100%;
+        display: flex;
+    }
+
+    .marketplace-category {
+        margin-top: 16px;
+        padding: 8px 16px;
+        width: 100%;
+        box-sizing: border-box;
+        border-top-left-radius: 6px;
+        border-top-right-radius: 6px;
+        transition: 0.3s;
+    }
+
+    .marketplace-category.active {
+        background: var(--accent);
+        transition: 0.3s;
+    }
+
+    .marketplace-category:not(.active):hover {
+        background: var(--bg-light);
+        transition: 0.3s;
+    }
+
+    #marketplace-body {
+        width: 100%;
+    }
+
+    .marketplace-item {
+        background: var(--bg-light);
+        padding: 16px;
+        box-sizing: border-box;
+        width: 50%;
+        text-align: center;
+        border-radius: 6px;
+    }
+
+    .marketplace-item:not(:last-child) {
+        margin-right: 16px;
+    }
+
+    .marketplace-item p {
+        width: 250px;
+    }
+
+    .marketplace-item .loader {
+        background: var(--bg);
+    }
+
+    .marketplace-bodies {
+        width: 100%;
+        box-sizing: border-box;
+        display: flex;
+        margin-top: 16px;
+        position: relative;
+    }
+
+    #currency {
+        padding: 3px 12px;
+        background: var(--bg-light);
+        margin-left: auto;
+        border-radius: 12px;
+        height: max-content;
+    }
+
+    #marketplace-body-scripts {
+        display: flex;
+        flex-direction: column;
+    }
+
+    #marketplace-scripts-body {
+        width: 100%;
+        height: 100%;
+        display: flex;
+        margin-top: 16px;
+    }
+</style>
+
+<div id = "marketplace-window">
+    <div style = "display: flex;">
+        <h2>Marketplace</h2>
+        <div id = "currency">HackPoint: 6969</div>
+    </div>
+
+    <div id = "marketplace-category">
+        <div class = "marketplace-category active" initial = "system">System Upgrade</div>
+        <div class = "marketplace-category" initial = "applications">Applications</div>
+        <div class = "marketplace-category" initial = "scripts">Scripts</div>
+    </div>
+
+    <div id = "marketplace-body">
+        <div class = "marketplace-bodies" id = "marketplace-body-system">
+            <div class = "marketplace-item">
+                <h2>Better Storage</h2>
+                <b>500 Hackpoint</b>
+    
+                <br>
+                
+                <label>Cloner speed: </label>
+                <label>5B/s -> 10B/s</label>
+                <div class = "loader">
+                    <div class = "loader-inner" style = "width: 5%; background: var(--fg); z-index: 2;"></div>
+                    <div class = "loader-inner" style = "width: 10%;"></div>
+                </div>
+    
+                <label>Cloner capacity: </label>
+                <label>10 -> 20</label>
+                <div class = "loader">
+                    <div class = "loader-inner" style = "width: 10%; background: var(--fg); z-index: 2;"></div>
+                    <div class = "loader-inner" style = "width: 20%;"></div>
+                </div>
+    
+                <button class = "button">Buy</button>
+            </div>
+    
+            <div class = "marketplace-item">
+                <h2>Better Cloner</h2>
+    
+                <b>500 Hackpoint</b>
+    
+                <br>
+                
+                <label>Cloner speed: </label>
+                <label>5B/s -> 10B/s</label>
+                <div class = "loader">
+                    <div class = "loader-inner" style = "width: 5%; background: var(--fg); z-index: 2;"></div>
+                    <div class = "loader-inner" style = "width: 10%;"></div>
+                </div>
+    
+                <label>Cloner capacity: </label>
+                <label>10 -> 20</label>
+                <div class = "loader">
+                    <div class = "loader-inner" style = "width: 10%; background: var(--fg); z-index: 2;"></div>
+                    <div class = "loader-inner" style = "width: 20%;"></div>
+                </div>
+    
+                <button class = "button">Buy</button>
+            </div>
+        </div>
+
+        <div class = "marketplace-bodies" id = "marketplace-body-applications" style = "display: none">
+            <input class = "input" placeholder = "Search">
+        </div>
+
+        <div class = "marketplace-bodies" id = "marketplace-body-scripts" style = "display: none">
+            <input class = "input" placeholder = "Search">
+
+            <div id = "marketplace-scripts-body">
+                <div class = "marketplace-item">
+                    <h2>Virus</h2>
+                    <b>50 HackPoint</b>
+
+                    <div class = "badge">Offensive</div>
+    
+                    <p>Basic malware that can infect target easily.</p>
+
+                    <button class = "button">Buy</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    $('.marketplace-category').on('click', function() {
+        $('.marketplace-category').removeClass('active')
+        $(this).addClass('active')
+
+        $('.marketplace-bodies').hide()
+        $(`#marketplace-body-${$(this).attr('initial')}`).show()
+    })
+</script>

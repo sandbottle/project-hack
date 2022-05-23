@@ -13,8 +13,12 @@
     "bcrypt": "^5.0.1",
     "cookie": "^0.5.0",
     "cookie-parser": "^1.4.6",
+    "dotenv": "^16.0.1",
     "eta": "^1.12.3",
+    "filbert": "^0.1.20",
     "isolated-vm": "^4.4.1",
+    "jspython": "^0.0.3",
+    "jspython-interpreter": "^2.1.7",
     "koa": "^2.13.4",
     "koa-body": "^5.0.0",
     "koa-router": "^10.1.1",
@@ -23,8 +27,7 @@
     "koa-static": "^5.0.0",
     "koa-websocket": "^7.0.0",
     "mongoose": "^6.3.3",
-    "python-js": "^0.9.8",
-    "socket.io": "^4.5.1",
+    "python-shell": "^3.0.1",
     "vm2": "^3.9.9",
     "ws": "^8.6.0"
   }

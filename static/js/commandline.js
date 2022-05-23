@@ -24,13 +24,13 @@ class commandLine {
                 }
 
                 t.prompt.val('')
-                t.output.scrollTop(t.output[0].scrollHeight)
             }
         })
     }
 
     write(message) {
         $(this.output).append(`<div class = "terminal-line">${message}</div>`)
+        $(this.output).scrollTop($(this.output)[0].scrollHeight)
     }
 
     clear() {

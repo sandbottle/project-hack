@@ -1,10 +1,14 @@
 <style>
-    #filter {
+    #file-manager-window {
+        min-width: 600px;
+    }
+
+    #file-manager-filter {
         width: 100%;
         margin-top: 8px;
     }
 
-    #filter-container {
+    #file-manager-filter-container {
         margin-top: 16px;
     }
 
@@ -17,7 +21,7 @@
     }
 </style>
 
-<div style = "min-width: 600px" id = "file-manager-window">
+<div id = "file-manager-window">
     <h2>File Manager</h2>
 
     <div style = "display: flex">
@@ -36,9 +40,9 @@
         <div class = "loader-inner" style = "width: <%= (it.inodes / it.maxInodes) * 100 %>%"></div>
     </div>
 
-    <div id = "filter-container">
-        <label for = "filter">Search: </label>
-        <input class = "input" id = "filter" placeholder = "File name ...">
+    <div id = "file-manager-filter-container">
+        <label for = "file-manager-filter">Search: </label>
+        <input class = "input" id = "file-manager-filter" placeholder = "File name ...">
     </div>
 
     <table class = "table">

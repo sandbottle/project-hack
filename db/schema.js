@@ -55,11 +55,13 @@ var user = new mongoose.Schema({
         type: Object,
         required: true,
         default: {
-            'file-manager': {name: 'File Manager', icon: '/images/file-manager.png', settings: {}},
-            'terminal': {name: 'Terminal', icon: '/images/terminal.png', settings: {}},
-            'text-editor': {name: 'Text Editor', icon: '/images/text-editor.png', settings: {}},
-            'cloner': {name: 'Cloner', icon: '/images/cloner.png', settings: {level: 1}},
-            'browser': {name: 'Browser', icon: '/images/browser.png', settings: {}}
+            'file-manager': {name: 'File Manager', icon: '/images/file-manager.png', settings: {pinned: true}},
+            'terminal': {name: 'Terminal', icon: '/images/terminal.png', settings: {pinned: true}},
+            'text-editor': {name: 'Text Editor', icon: '/images/text-editor.png', settings: {pinned: true}},
+            'cloner': {name: 'Cloner', icon: '/images/cloner.png', settings: {pinned: true, level: 1}},
+            'browser': {name: 'Browser', icon: '/images/browser.png', settings: {pinned: true}},
+            'marketplace': {name: 'Marketplace', icon: '/images/marketplace.png', settings: {pinned: false}},
+            'chat': {name: 'Chat', icon: '/images/chat.png', settings: {pinned: false}}
         }
     },
     diskUsage: {
@@ -120,15 +122,49 @@ var user = new mongoose.Schema({
         required: true,
         default: 0
     },
-    systemDesign: {
+    map: {
         type: Array,
         required: true,
         default: [
-            null, null, null,
-            null, {type: 'filesystem'}, null,
-            null, {type: 'filesystem'}, null
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+            [0,0,0,0,0,1,1,1,1,1,0,0,0,0,0],
+            [0,0,0,0,0,1,1,1,1,1,1,0,0,0,0,0],
+            [0,0,0,0,2,1,1,1,1,1,3,0,0,0,0],
+            [0,0,0,0,0,2,1,1,1,1,1,0,0,0,0,0],
+            [0,0,0,0,0,2,1,1,1,1,0,0,0,0,0],
+            [0,0,0,0,0,0,1,1,1,1,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0],
+            [0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0]
         ]
     }
 })
 
+var market = new mongoose.Schema({
+    name: {
+        type: String,
+        required: true
+    },
+    location: {
+        type: String,
+        required: true
+    },
+    author: {
+        type: String,
+        required: true
+    },
+    number: {
+        type: Number,
+        required: true,
+        default: true
+    },
+    price: {
+        type: String,
+        required: true,
+        default: 1
+    }
+})
+
 exports.user = new mongoose.model('user', user, 'user')
+exports.market = new mongoose.model('market', market, 'market')

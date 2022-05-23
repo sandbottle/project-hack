@@ -2,7 +2,7 @@ const ws = require('ws')
 const cookie = require('cookie')
 const parser = require('cookie-parser')
 const gamehelper = require('./gamefunctions')
-var crypto = require('crypto')
+const crypto = require('crypto')
 
 class wsServer {
     constructor () {
@@ -89,51 +89,60 @@ class wsServer {
                         var targetExists = false
                         
                         if (!ws.target) {
-                            this.wss.clients.forEach(function (client) {
-                                if (client.user == parsed.data.target) {
-                                    if (ws.attacker == null) {
-                                        t.h.startAttack(ws.user, parsed.data.target).then(async function(result) {
-                                            if (result.status == 'success') {
-                                                var room = crypto.randomBytes(16).toString('hex')
+                            // change this line
+                            if (parsed.data.target != ws.user) {
+                                this.wss.clients.forEach(function (client) {
+                                    if (client.user == parsed.data.target) {
+                                        if (ws.attacker == null) {
+                                            t.h.startAttack(ws.user, parsed.data.target).then(async function(result) {
+                                                if (result.status == 'success') {
+                                                    var room = crypto.randomBytes(16).toString('hex')
+                                                    
+                                                    var bookedBy = {}
+                                                    bookedBy[ws.user] = {role: 'attacker'}
+                                                    bookedBy[client.user] = {role: 'defender'}
 
-                                                battleServer.create(room, [ws.user, client.user])
-
-                                                client.send(JSON.stringify({status: 'success', to: 'client', message: 'under_attack', data: {room: room}}))
-                                                ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_started', data: {room: room}}))
-
-                                                ws.target = client
-                                                client.attacker = ws
-
-                                                result.timeout(function() {
-                                                    ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_timeout'}))
-                                                    client.send(JSON.stringify({status: 'success', to: 'client', message: 'attack_stopped'}))
+                                                    battleServer.create(room, bookedBy, result.map)
     
-                                                    ws.target = null
-                                                    client.attacker = null
-                                                })
-                                            } else {
-                                                ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: result.message}))
-                                            }
-                                        })
-                                    } else {
-                                        client.send(JSON.stringify({status: 'failed', to: 'client', message: 'attacked'}))
-                                    }
+                                                    client.send(JSON.stringify({status: 'success', to: 'client', message: 'under_attack', data: {room: room}}))
+                                                    ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_started', data: {room: room}}))
     
-                                    /*
+                                                    ws.target = client
+                                                    client.attacker = ws
     
-                                    codes:
-                                        underattack: attacked by someone 
-                                        attackstarted: success attacking target
-                                        timeout: attack is finisihed due the 2 minutes limit
-                                        attacked: can't attack because attaker is attacked by someone
-                                    */
-    
-                                    targetExists = true
-                                } 
-                            })
-    
-                            if (!targetExists) {
-                                ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'not_online'}))
+                                                    result.timeout(function() {
+                                                        ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_timeout'}))
+                                                        client.send(JSON.stringify({status: 'success', to: 'client', message: 'attack_stopped'}))
+        
+                                                        ws.target = null
+                                                        client.attacker = null
+                                                    })
+                                                } else {
+                                                    ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: result.message}))
+                                                }
+                                            })
+                                        } else {
+                                            client.send(JSON.stringify({status: 'failed', to: 'client', message: 'attacked'}))
+                                        }
+        
+                                        /*
+        
+                                        codes:
+                                            underattack: attacked by someone 
+                                            attackstarted: success attacking target
+                                            timeout: attack is finisihed due the 2 minutes limit
+                                            attacked: can't attack because attaker is attacked by someone
+                                        */
+        
+                                        targetExists = true
+                                    } 
+                                })
+        
+                                if (!targetExists) {
+                                    ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'not_online'}))
+                                }
+                            } else {
+                                ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'cant_do_self_attack'}))
                             }
                         } else {
                             ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'already_attack'}))

@@ -9,6 +9,7 @@
         <script src = "/js/commandline.js"></script>
         <link rel = "stylesheet" href = "http://code.jquery.com/ui/1.9.2/themes/base/jquery-ui.css"/>
         <link rel = "stylesheet" href = "/fontello/css/fontello.css">
+        <script src = "/js/easystar.js"></script>
     </head>
 
     <body>
@@ -37,7 +38,11 @@
         </div>
 
         <div id = "attack-timer">
-            Attacking time left: 02:00
+        
+        </div>
+
+        <div id = "right-click-menu">
+            Unpin app
         </div>
 
         <div id = "disconnected" class = "hidden">
@@ -50,8 +55,18 @@
         </div>
 
         <main id = "main">
+            <div id = "applications-list">
+                <% var keys = Object.keys(it.installed).sort() %>
+                <% for (x = 0; x <= keys.length - 1; x++) { %>
+                    <div class = "icon" initial = "<%= keys[x] %>" data-title = "<%= it.installed[keys[x]].name %>">
+                        <img src = "<%= it.installed[keys[x]].icon %>">
+                        <span><%= it.installed[keys[x]].name %></span>
+                    </div>
+                <% }%>
+            </div>
+
             <header id = "header">
-                <div onclick = "$('#icons').toggleClass('hidden')">Applications</div>
+                <div id = "icons-toggle">Applications</div>
                 <div id = "clock">12:30</div>
                 <div id = "account">
                     <span onclick = "$('#account .popup').toggleClass('active')">Account</span>
@@ -69,11 +84,16 @@
             <div class = "telegram">
                 <img src = "/images/users/body0.png" class = "profile">
                 <div class = "content">
-                    <h3>You got a telegram!</h3>
-                    <span>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque ornare rutrum arcu eget tristique. </span>
+                    <h3>Mark</h3>
+                    <span>Hey hacker, just wanna ask why you do a penetration test on my web without my permissions. I sue you $10.000 for the 2 hours downtime.</span>
+
+                    <div style = "display: flex; margin-top: 16px;">
+                        <button class = "button" style = "margin-right: 6px">Transfer</button>
+                        <button class = "button">Fuck, no</button>
+                    </div>
                 </div>
             </div>
-            -->
+        -->
 
             <div id = "windows">
                 <div id = "scroll-tolerance"></div>
@@ -81,13 +101,17 @@
                     <div id = "icons" class = "hidden">
                         <% var keys = Object.keys(it.installed) %>
                         <% for (x = 0; x <= keys.length - 1; x++) { %>
+                            <% if (it.installed[keys[x]].settings.pinned) { %>
                             <div class = "icon" initial = "<%= keys[x] %>" data-title = "<%= it.installed[keys[x]].name %>">
                                 <img src = "<%= it.installed[keys[x]].icon %>">
                             
                                 <div class = "ball"></div>
                             </div>
-                        <% } %>
-                        <div class = "icon" id = "menu" data-title = "Menu"></div>
+                        <% }} %>
+
+                        <div class = "icon" id = "menu" data-title = "Menu">
+                            <img src = "/images/menu.png">
+                        </div>
                     </div>
                 </div>
     
@@ -100,31 +124,85 @@
         <script>
             class main {
                 constructor() {
+                    Storage.prototype.setObj = function(key, obj) {
+                        return this.setItem(key, JSON.stringify(obj))
+                    }
+
+                    Storage.prototype.getObj = function(key) {
+                        return JSON.parse(this.getItem(key))
+                    }
+
                     this.windows = {}
+                    this.icons = []
                     this.renderedWindowContent = []
                     this.attackInterval = null
 
                     this.wsListener = {}
+                    this.bsListener = []
 
-                    this.toggleListener()
+                    this.highest = 1
 
                     var t = this
                     this.clockInterval = setInterval(() => {
                         t.updateClock()
                     }, 1000)
 
-                    this.highest = 100
+                    $('#icons .icon').each(function(i, element) {
+                        t.icons.push($(element).attr('initial'))  
+                    })
 
+                    if (localStorage.getObj('isMenuOpened')) {
+                        $('#icons').removeClass('hidden')
+                    }
+                    
+                    $('#icons-toggle').on('click', function() {
+                        $('#icons').toggleClass('hidden')
+                        localStorage.setObj('isMenuOpened', !$('#icons').hasClass('hidden'))
+                    })
+
+                    this.toggleListener()
                     this.updateClock()
                     this.wsConnect()
+                    this.bindRightClick()
 
                     $('.icon:not(#menu)').on('click', function(event) {
                         var title = $(this).attr('data-title')
                         var initial = $(this).attr('initial')
 
                         t.createWindow({title: title, initial: initial})
-                        $(this).children('.ball').addClass('active')
+                        $('#applications-list').removeClass('active')
+
+                        if (!t.windows[initial]) {
+                            if (!t.icons.includes(initial)) {
+                                var elem = $(`<div class = "icon" initial = "${initial}" data-title = "${title}"><img src = "${$(this).children('img').attr('src')}"><div class = "ball"></div></div>`)
+
+                                elem.insertBefore('.icon#menu')
+                            }
+                        }
+
+                        $(`.icon[initial="${initial}"]`).children('.ball').addClass('active')
                     })
+
+                    $('.icon#menu').on('click', function(event) {
+                        $('#applications-list').toggleClass('active')
+                    })
+
+                    var storedWindows = localStorage.getObj('windows')
+                    if (storedWindows != null) {
+                        Object.keys(storedWindows).forEach(key => {
+                            $(`.icon[initial="${key}"]`).children('.ball').addClass('active')
+                            t.createWindow({initial: key, title: storedWindows[key].title, pos: storedWindows[key].pos || [0, 0], zIndex: storedWindows[key].zIndex || 1})
+                        
+                            if (!t.windows[key]) {
+                                if (!t.icons.includes(key)) {
+                                    var elem = $(`<div class = "icon" initial = "${key}" data-title = "${storedWindows[key].title}"><img src = "${$(`#applications-list .icon[initial="${key}"]`).children('img').attr('src')}"><div class = "ball"></div></div>`)
+
+                                    elem.insertBefore('.icon#menu')
+                                    $(`.icon[initial="${key}"]`).children('.ball').addClass('active')
+                                }
+                            }
+                        })
+                    }
                 }
 
                 // clocks
@@ -141,13 +219,14 @@
                         seconds: 0
                     }
 
+                    $('#attack-timer').show()
                     this.attackInterval = setInterval(() => {
                         $('#attack-timer').html(`Time available: ${time.minutes}:${('0' + time.seconds).substr(-2)}`)
                         if (time.seconds == 0) {
                             time.minutes -= 1
                             time.seconds = 59
                         
-                            if (time.minutes > 0) {
+                            if (time.minutes < 0) {
                                 clearInterval(this.interval)
                                 $('#attack-timer').hide()
                             }
@@ -155,6 +234,11 @@
 
                         time.seconds -= 1
                     }, 1000)
+                }
+
+                stopAttackClock() {
+                    $('#attack-timer').hide()
+                    clearInterval(this.attackInterval)
                 }
 
                 // websocket (default)
@@ -196,6 +280,7 @@
                             $('#under-attack').addClass('hidden')
 
                             t.bsDisconnect()
+                            t.stopAttackClock()
                         } else if (data.message == 'spawned') {
                             
                         }
@@ -213,7 +298,18 @@
                 // websocket (battle server)
 
                 bsConnect() {
+                    var t = this
+
                     this.battleServer = new WebSocket('ws://localhost:8081')
+
+                    this.battleServer.onmessage = function(event) {
+                        var parsed = JSON.parse(event.data)
+                    
+                        if (parsed.message == 'entered') {
+                            engine.createWindow({title: 'Target Stats', initial: 'target-stats'})
+                            t.bsMap = parsed.data.map
+                        }
+                    }
                 }
 
                 bsDisconnect() {
@@ -225,9 +321,7 @@
                 }
 
                 bsListen(cb) {
-                    this.battleServer.onmessage = function(event) {
-                        cb(JSON.parse(event.data))
-                    }
+                    this.bsListener.push(cb)
                 }
 
                 // window management
@@ -238,13 +332,25 @@
                     $.get(`/applications/${options.initial}`, function(data, status) {
                         if (data.status == 'success') {
                             if (!t.windows[options.initial]) {
-                                var window = $(`<div class = "window" initial = "${options.initial}"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${data.content}</div></div>`)
+                                options.pos = options.pos || ['auto', 'auto']
+
+                                var window = $(`<div class = "window" style = "z-index: ${options.zIndex || t.highest}; top: ${options.pos[0] || 0}px; left: ${options.pos[1] || 0}px;" initial = "${options.initial}"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${data.content}</div></div>`)
 
                                 $('#right').append(window)
                                 t.windows[options.initial] = window
                                 t.toggleListener()
+
+                                var storedWindows = localStorage.getObj('windows') || {}
+                                storedWindows[options.initial] = {title: options.title, pos: options.pos}
+
+                                localStorage.setObj('windows', storedWindows)
                             } else {
                                 t.windows[options.initial].css('z-index', t.highest++)
+
+                                var storedWindows = localStorage.getObj('windows') || {}
+                                storedWindows[options.initial].zIndex = t.highest
+
+                                localStorage.setObj('windows', storedWindows)
                             }
                         } else {
                             alert(data.message)
@@ -255,17 +361,40 @@
                 destroyWindow(window) {
                     if (window) {
                         var t = this
+                        var initial = $(window).closest('.window').attr('initial')
 
                         $(window).closest('.window').addClass('hidden')
                         $(window).closest('.window').on('transitionend oTransitionEnd webkitTransitionEnd', function() {
                             $(window).closest('.window').remove()
-                            delete t.windows[$(window).closest('.window').attr('initial')]
-                            $(`.icon[initial="${$(window).closest('.window').attr('initial')}"]`).children('.ball').removeClass('active')
+                            delete t.windows[initial]
+                            $(`.icon[initial="${initial}"]`).children('.ball').removeClass('active')
                         })
+
+                        if (!t.icons.includes(initial)) {
+                            $(`#icons .icon[initial="${initial}"]`).remove()
+                        }
+
+                        var storedWindows = localStorage.getObj('windows') || {}
+                        delete storedWindows[initial]
+
+                        localStorage.setObj('windows', storedWindows)
                     }
                 }
 
                 // other functions
+
+                bindRightClick() {
+                    $('body').on('contextmenu', function(event) {
+                        $('#right-click-menu').show()
+                        $('#right-click-menu').css({top: event.pageY, left: event.pageX})
+
+                        return false
+                    })
+
+                    $('body').on('click', function() {
+                        $('#right-click-menu').hide()
+                    })
+                }
 
                 logout() {
                     $.get('/account/logout', function(data, status) {
@@ -274,15 +403,23 @@
                 }
 
                 toggleListener() {
+                    var t = this
                     $('.window:not(.not-draggable)').draggable({
                         handle: '.header',
                         opacity: 0.5,
                         scroll: false,
                         containment: $('#scroll-tolerance'),
-                        stack: '.window'
+                        stack: '.window',
+                        stop: function(event) {
+                            var css = $(event.target).css(['top', 'left'])
+
+                            var storedWindows = localStorage.getObj('windows') || {}
+                            storedWindows[$(event.target).attr('initial')].pos = [parseFloat(css.top), parseFloat(css.left)] 
+
+                            localStorage.setObj('windows', storedWindows)
+                        }
                     })
 
-                    var t = this
                     $('.close').on('click', function() {
                         t.destroyWindow(this)
                     })
