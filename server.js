@@ -53,7 +53,7 @@ app.use(require('./routes/applications').routes())
 // statics
 app.use(static(path.join(__dirname, 'static')))
 
-app.listen(4040, function() {
+app.listen(process.env.PORT, function() {
     var h = new gamehelper()
     h.cleanup()
     console.log('Server started.')

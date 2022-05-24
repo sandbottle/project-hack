@@ -244,7 +244,7 @@
                 // websocket (default)
 
                 wsConnect() {
-                    this.ws = new WebSocket('ws://localhost:8080')
+                    this.ws = new WebSocket(`ws://${window.location.host.split(':')[0]}:8080`)
 
                     var t = this
                     this.ws.onopen = function (event) {
@@ -281,8 +281,10 @@
 
                             t.bsDisconnect()
                             t.stopAttackClock()
-                        } else if (data.message == 'spawned') {
-                            
+                        } else if (data.message == 'connected') {
+                            t.bsConnect()
+
+                            $('#attack-timer').show()
                         }
                     })
                 }
@@ -300,13 +302,13 @@
                 bsConnect() {
                     var t = this
 
-                    this.battleServer = new WebSocket('ws://localhost:8081')
+                    this.battleServer = new WebSocket(`ws://${window.location.host.split(':')[0]}:8081`)
 
                     this.battleServer.onmessage = function(event) {
                         var parsed = JSON.parse(event.data)
                     
                         if (parsed.message == 'entered') {
-                            engine.createWindow({title: 'Target Stats', initial: 'target-stats'})
+                            engine.createWindow({title: 'Target Stats', initial: 'target-stats', noClose: true})
                             t.bsMap = parsed.data.map
                         }
                     }
@@ -334,7 +336,13 @@
                             if (!t.windows[options.initial]) {
                                 options.pos = options.pos || ['auto', 'auto']
 
-                                var window = $(`<div class = "window" style = "z-index: ${options.zIndex || t.highest}; top: ${options.pos[0] || 0}px; left: ${options.pos[1] || 0}px;" initial = "${options.initial}"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div><div class = "close">x</div></div><div class = "content">${data.content}</div></div>`)
+                                if (!options.noClose) {
+                                    close = '<div class = "close">x</div>'
+                                } else {
+                                    close = '<div></div>'
+                                }
+
+                                var window = $(`<div class = "window" style = "z-index: ${options.zIndex || t.highest}; top: ${options.pos[0] || 0}px; left: ${options.pos[1] || 0}px;" initial = "${options.initial}"><div class = "header"><div class = "balls"><div class = "ball"></div><div class = "ball"></div><div class = "ball"></div></div><div class = "title">${options.title || 'Window'}</div>${close}</div><div class = "content">${data.content}</div></div>`)
 
                                 $('#right').append(window)
                                 t.windows[options.initial] = window
