@@ -1,5 +1,4 @@
 const db = require('../db/schema')
-const attackServer = require('./battleserver')
 
 class helper {
     constructor() {
@@ -7,7 +6,7 @@ class helper {
     }
 
     async cleanup() {
-        await db.user.updateMany({}, {online: false, underAttack: false})
+        await db.user.updateMany({}, {online: false, underAttack: false, isAttacking: false})
     }
 
     async updateCurrency(username, number) {
@@ -134,7 +133,7 @@ class helper {
         var t = this
 
         return new Promise(resolve => {
-            db.user.findOne({username: target}, {map: 1, underAttack: 1, isAttacking: 1}).then(function(result) {
+            db.user.findOne({username: target}, {map: 1, underAttack: 1, isAttacking: 1}).then(async function(result) {
                 if (result) {
                     if (!result.underAttack && !result.isAttacking) {
                         var timeout = new Date().getTime() + 120000
@@ -146,7 +145,7 @@ class helper {
                         result.markModified('attackTimeout')
                         result.save()
     
-                        db.user.updateOne({username: username}, {isAttacking: true, attackTimeout: timeout})
+                        await db.user.updateOne({username: username}, {isAttacking: true, attackTimeout: timeout})
 
                         resolve({
                             status: 'success', 
@@ -174,18 +173,33 @@ class helper {
         await db.user.updateOne({username: username}, {isAttacking: false, attackTimeout: null})
     }
 
-    scan(username) {
+    scan(username, params) {
+        return new Promise(resolve => {
+            db.user.find({username: {$ne: username}, isAttacking: false, underAttack: false, online: true}, {username: 1, karma: 1, currency: 1, inodes: 1, _id: 0}).limit(5).then(function(result) {
+                resolve({status: 'success', data: result})
+            })
+        })
+    }
+
+    spawn(username, name) {
         var t = this
 
         return new Promise(resolve => {
-            db.user.findOne({username: username}, {files: 1, karma: 1}).then(function(result) {
-                if (result.files.scanner) {
-                    t.removeFiles(username, {name: 'scanner'}, 1)
-                    db.user.find({username: {$ne: username}, underAttack: false, online: true, karma: {$gt: result.karma - 100, $lt : result.karma + 100}}, {username: 1, karma: 1, currency: 1, inodes: 1, _id: 0}).limit(5).then(function(result) {
-                        resolve({status: 'success', data: result})
-                    })
+            db.user.findOne({username: username}, {files: 1}).then(function(result) {
+                var file = result.files[name]
+                if (file) {
+                    resolve({status: 'success', location: file.contentLocation})
+
+                    if (file.number > 1) {
+                        file.number -= 1
+                    } else {
+                        delete result.files[name]
+                    }
+
+                    result.markModified('files')
+                    result.save()
                 } else {
-                    resolve({status: 'failed', message: 'noscanner'})
+                    resolve({status: 'failed', message: 'file_not_found'})
                 }
             })
         })

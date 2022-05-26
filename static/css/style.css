@@ -37,6 +37,7 @@
     background: var(--accent);
     color: var(--fg);
     border-radius: 6px;
+    text-decoration: none;
 }
 
 .input-box {
@@ -371,4 +372,8 @@ tr {
     background: var(--accent);
     border-radius: 12px;
     box-sizing: border-box;
+}
+
+.link {
+    color: var(--accent);
 }

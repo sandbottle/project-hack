@@ -1,6 +1,7 @@
 const ws = require('ws')
 const cookie = require('cookie')
 const parser = require('cookie-parser')
+const db = require('../db/schema')
 const gamehelper = require('./gamefunctions')
 const crypto = require('crypto')
 
@@ -86,66 +87,49 @@ class wsServer {
                 case 'warhorn':
                     if (parsed.message == 'start_attack') {      
                         var t = this
-                        var targetExists = false
                         
-                        if (!ws.target) {
-                            // change this line
+                        if (!ws.target && !ws.attacker) {
                             if (parsed.data.target != ws.user) {
-                                this.wss.clients.forEach(function (client) {
-                                    if (client.user == parsed.data.target) {
-                                        if (ws.attacker == null) {
-                                            t.h.startAttack(ws.user, parsed.data.target).then(async function(result) {
-                                                if (result.status == 'success') {
-                                                    var room = crypto.randomBytes(16).toString('hex')
-                                                    
-                                                    var bookedBy = {}
-                                                    bookedBy[ws.user] = {role: 'attacker'}
-                                                    bookedBy[client.user] = {role: 'defender'}
+                                var client = Array.from(t.wss.clients).filter(function(data) {return data.user == parsed.data.target})[0]
 
-                                                    battleServer.create(room, bookedBy, result.map)
+                                if (client) {
+                                    t.h.startAttack(ws.user, parsed.data.target).then(async function(result) {
+                                        if (result.status == 'success') {
+                                            var room = crypto.randomBytes(16).toString('hex')
+                                            
+                                            var bookedBy = {}
+                                            bookedBy[ws.user] = {role: 'attacker'}
+                                            bookedBy[client.user] = {role: 'defender'}
     
-                                                    client.send(JSON.stringify({status: 'success', to: 'client', message: 'under_attack', data: {room: room}}))
-                                                    ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_started', data: {room: room}}))
+                                            battleServer.create(room, bookedBy, result.map)
     
-                                                    ws.target = client
-                                                    client.attacker = ws
+                                            client.send(JSON.stringify({status: 'success', to: 'client', message: 'under_attack', data: {room: room}}))
+                                            ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_started', data: {room: room}}))
     
-                                                    result.timeout(function() {
-                                                        ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_timeout'}))
-                                                        client.send(JSON.stringify({status: 'success', to: 'client', message: 'attack_stopped'}))
-        
-                                                        ws.target = null
-                                                        client.attacker = null
-                                                    })
-                                                } else {
-                                                    ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: result.message}))
-                                                }
+                                            ws.target = client
+                                            client.attacker = ws
+    
+                                            result.timeout(function() {
+                                                ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_timeout'}))
+                                                client.send(JSON.stringify({status: 'success', to: 'client', message: 'attack_stopped'}))
+
+                                                // battleServer.destroy(room)
+
+                                                ws.target = null
+                                                client.attacker = null
                                             })
                                         } else {
-                                            client.send(JSON.stringify({status: 'failed', to: 'client', message: 'attacked'}))
+                                            ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: result.message}))
                                         }
-        
-                                        /*
-        
-                                        codes:
-                                            underattack: attacked by someone 
-                                            attackstarted: success attacking target
-                                            timeout: attack is finisihed due the 2 minutes limit
-                                            attacked: can't attack because attaker is attacked by someone
-                                        */
-        
-                                        targetExists = true
-                                    } 
-                                })
-        
-                                if (!targetExists) {
+                                    })
+                                } else {
                                     ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'not_online'}))
                                 }
                             } else {
                                 ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'cant_do_self_attack'}))
                             }
                         } else {
-                            ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'already_attack'}))
+                            ws.send(JSON.stringify({status: 'failed', to: 'warhorn', message: 'already_attacking_or_attacked'}))
                         }
                     } else if (parsed.message == 'stop_attack') {
                         if (ws.target) {
@@ -153,11 +137,11 @@ class wsServer {
 
                             ws.target.send(JSON.stringify({status: 'success', to: 'client', message: 'attack_stopped'}))
                             ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'attack_stopped'}))
-                        
+
                             ws.target.attacker = null
                             ws.target = null
                         } else {
-                            ws.send(JSON.stringify({status: 'success', to: 'warhorn', message: 'no_target'}))
+                            ws.send(JSON.stringify({status: 'success', to: 'client', message: 'no_target'}))
                         }
                     }
                     break
@@ -178,7 +162,7 @@ class wsServer {
         
         var cookies = cookie.parse(req.headers.cookie)
         var sid = parser.signedCookie(cookies['koa.sess'], 'huuu')
-        await store.get(sid).then(function(data) {
+        await store.get(sid).then(async function(data) {
             if (!data.user) {
                 ws.send(JSON.stringify({status: 'failed', to: 'client', message: 'unauthorized'}))
                 ws.close()
@@ -186,18 +170,29 @@ class wsServer {
                 ws.user = data.user
                 ws.sid = sid
 
+                await db.user.findOne({username: ws.user}, {underAttack: 1, isAttacking: 1, attackTimeout: 1}).then(function(result) {
+                    if (result.underAttack || result.isAttacking) {
+                        var otherUser = battleServer.rooms[cookies.room].clients.filter(function(data) {return data.user != ws.user})[0]
+                        if (otherUser) {
+                            var otherUserWs = Array.from(t.wss.clients).filter(function(data) {return data.user == otherUser['user']})[0]
+
+                            if (otherUser['role'] == 'attacker') {
+                                ws.attacker = otherUserWs
+                                otherUserWs.target = ws
+                            } else {
+                                ws.target = otherUserWs
+                                otherUserWs.attacker = ws
+                            }
+    
+                            ws.send(JSON.stringify({status: 'success', to: 'client', message: 'connected', data: {isUnderOrAttack: true, attackTimeout: result.attackTimeout}}))
+                        }
+                    }
+                })
+
                 t.h.changeOnlineStatus(data.user, true)
             }
         })
     }
-        
-    broadcast(data) {
-        this.wss.clients.forEach(function each(client) {
-            if (client.readyState === WebSocket.OPEN) {
-                client.send(data, { binary: isBinary })
-            }
-        })
-    } 
 }
 
 new wsServer()

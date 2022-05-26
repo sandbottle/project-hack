@@ -1,0 +1,3 @@
+if (tile == 0) {
+    infect()
+}

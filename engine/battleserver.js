@@ -1,10 +1,17 @@
 const ws = require('ws')
 const cookie = require('cookie')
 const parser = require('cookie-parser')
-const childPros = require('child_process')
-const crypto = require('crypto')
+const gamehelper = require('./gamefunctions')
+const easystar = require('easystarjs')
 
 var rooms = {}
+var h = new gamehelper()
+var tileList = {
+    1: {name: 'empty', weight: 1},
+    2: {name: 'wall', weight: 0},
+    3: {name: 'port', weight: 1},
+    4: {name: 'core', weight: 1}
+}
 
 const wss = new ws.WebSocketServer({ port: 8081 })
 wss.on('connection', async function connection(ws, req) {
@@ -33,7 +40,31 @@ wss.on('connection', async function connection(ws, req) {
 
                     if (room.clients.length == Object.keys(room.bookedBy).length) {
                         room.broadcast(JSON.stringify({status: 'success', message: 'entered', data: {map: room.map}}))
-                        console.log('all user joined. starting match ..')
+
+                        // map rendering
+                        room.pathfinding = new easystar.js()
+                        room.pathfinding.setGrid(room.map)
+                        room.pathfinding.setAcceptableTiles([0, 1, 2, 3, 4])
+
+                        Object.keys(tileList).forEach(tile => {
+                            console.log(tileList[tile].weight)
+                            console.log(tile)
+                            room.pathfinding.setTileCost(tile, tileList[tile].weight)
+                        })
+
+                        if (Object.keys(room.renderedMap).length == 0) {
+                            room.map.forEach(function(column, y) {
+                                column.forEach(function (row, x) {
+                                    if (row > 1) {
+                                        if (room.renderedMap[tileList[row].name]) {
+                                            room.renderedMap[tileList[row].name].push({x, y})
+                                        } else {
+                                            room.renderedMap[tileList[row].name] = [{x, y}]
+                                        }
+                                    }
+                                })
+                            })
+                        }
                     }
                 } else {
                     ws.send(JSON.stringify({status: 'failed', message: 'user_not_invited'}))
@@ -57,10 +88,20 @@ wss.on('connection', async function connection(ws, req) {
         switch (parsed.message) {
             case 'spawn':
                 room.entities.push(parsed.data.entityName)
-                console.log(`user spawn ${parsed.data}`)
 
-                ws.send(JSON.stringify({status: 'success', message: 'spawned'}))
-                
+                h.spawn(ws.user, parsed.data.entityName).then(function(result) {
+                    if (result.status == 'success') {
+                        var portPos = room.renderedMap['port'][0]
+                        room.pathfinding.findPath(portPos.x, portPos.y, 5, 5, function(path) {
+                            console.log(path)
+                            room.broadcast(JSON.stringify({status: 'success', message: 'spawned', data: {path: path}}))
+                        })
+                        room.pathfinding.calculate()
+                    } else {
+                        ws.send(JSON.stringify({status: 'failed', message: 'no_entity_to_spawn'}))
+                    }
+                })
+
                 break
             }
     })
@@ -71,10 +112,12 @@ wss.on('connection', async function connection(ws, req) {
         if (ws.user) {
             console.log(`user ${ws.user} leaved`)
 
-            room.clients.splice(room.clients.indexOf(ws), 1)
-            if (room.clients.length == 0) {
-                console.log('all user exited. deleting room ..')
-                delete room
+            if (room) {
+                room.clients.splice(room.clients.indexOf(ws), 1)
+                if (room.clients.length == 0) {
+                    console.log('all user exited. deleting room ..')
+                    delete room
+                }
             }
         }
     })
@@ -82,9 +125,13 @@ wss.on('connection', async function connection(ws, req) {
 
 module.exports = {
     create: function(room, bookedBy, map) {
-        rooms[room] = {clients: [], bookedBy: bookedBy, map: map, entities: []}
+        rooms[room] = {clients: [], bookedBy: bookedBy, map: map, renderedMap: {}, entities: []}
     },
     destroy: function(room) {
+        if (rooms[room]) {
+            rooms[room].broadcast(JSON.stringify({status: 'success', message: 'closed'}))
+        }
         delete rooms[room]
-    }
+    },
+    rooms: rooms
 }

@@ -49,7 +49,9 @@
             <div>
                 <center>
                     <h1 class = "glitch" data-text = "DISCONNECTED">DISCONNECTED</h1>
-                    <h2>You have been disconnected from the server. Refresh this page to reconnect.</h2>
+                    <h2>You have been disconnected from the server. Make sure you have a fine internet and reconnect.</h2>
+
+                    <button class = "button" onclick = "engine.wsConnect()">Reconnect</button>
                 </center>
             </div>
         </div>
@@ -141,6 +143,9 @@
                     this.bsListener = []
 
                     this.highest = 1
+                    this.reconnect = null
+
+                    this.isAttack = false
 
                     var t = this
                     this.clockInterval = setInterval(() => {
@@ -213,10 +218,23 @@
                     $('#clock').html(`${('0' + this.date.getHours()).substr(-2)}:${('0' + this.date.getMinutes()).substr(-2)}:${('0' + this.date.getSeconds()).substr(-2)}`)
                 }
 
-                startAttackClock() {
-                    var time = {
-                        minutes: 2,
-                        seconds: 0
+                startAttackClock(date = null) {
+                    var t = this
+
+                    clearInterval(this.attackInterval)
+                    if (date != null) {
+                        var date = new Date(new Date(date).getTime() - new Date().getTime()) 
+                        var time = {}
+                        
+                        time = {
+                            minutes: date.getMinutes(),
+                            seconds: date.getSeconds() 
+                        }
+                    } else {
+                        time = {
+                            minutes: 2,
+                            seconds: 0
+                        }
                     }
 
                     $('#attack-timer').show()
@@ -227,7 +245,7 @@
                             time.seconds = 59
                         
                             if (time.minutes < 0) {
-                                clearInterval(this.interval)
+                                clearInterval(t.attackInterval)
                                 $('#attack-timer').hide()
                             }
                         }
@@ -239,6 +257,7 @@
                 stopAttackClock() {
                     $('#attack-timer').hide()
                     clearInterval(this.attackInterval)
+                    bsDisconnect()
                 }
 
                 // websocket (default)
@@ -248,13 +267,34 @@
 
                     var t = this
                     this.ws.onopen = function (event) {
-                        t.wsSend({status: 'success', from: 'client', message: 'connected'})
+                        t.reconnectTry = 0
+                        clearInterval(t.reconnect)
+                        t.reconnect = null
+
+                        $('#disconnected').addClass('hidden')
                     }
 
                     this.ws.onclose = function (event) {
-                        setTimeout(() => {
-                            $('#disconnected').removeClass('hidden')
-                        }, 5000) // for prevent toggling this when user reload.
+                        // trying to reconnect 
+
+                        if (t.reconnect == null) {
+                            t.reconnectTry = 0
+                            t.reconnect = setInterval(() => {
+                                if (t.reconnectTry >= 5) {
+                                    $('#disconnected').removeClass('hidden')
+                                    clearInterval(t.reconnect)
+                                    t.reconnect = null
+                                    console.log('stopped')
+                                } else {
+                                    t.reconnectTry += 1
+                                    t.wsConnect()
+
+                                    if (t.battleServer) {
+                                        t.bsConnect()
+                                    }
+                                }                           
+                            }, 1000)
+                        }
                     }
 
                     this.ws.onmessage = function(event) {
@@ -282,15 +322,22 @@
                             t.bsDisconnect()
                             t.stopAttackClock()
                         } else if (data.message == 'connected') {
-                            t.bsConnect()
+                            console.log('this user indicated attacking/be attacked before. reconnecting ...')
 
-                            $('#attack-timer').show()
+                            t.bsConnect()
+                            t.startAttackClock(data.data.attackTimeout)
+                            t.isAttack = true
                         }
                     })
                 }
 
                 wsSend(message) {
-                    this.ws.send(JSON.stringify(message))
+                    if (this.ws.readyState === 1) {
+                        this.ws.send(JSON.stringify(message))
+                    } else {
+                        alert('cant connect to the server. reloading ...')
+                        window.location.reload()
+                    }
                 }
 
                 wsListen(to, cb) {
@@ -310,12 +357,27 @@
                         if (parsed.message == 'entered') {
                             engine.createWindow({title: 'Target Stats', initial: 'target-stats', noClose: true})
                             t.bsMap = parsed.data.map
+                        } else if (parsed.message == 'closed') {
+                            engine.isAttack = false
+                            terminal.write('Attack stopped')
+
+                            $('#terminal-cursor').removeClass('red')
+                            $('#terminal-cursor').addClass('green')
+                        
+                            engine.stopAttackClock()
+
+                            engine.bsDisconnect()
+                        } else if (parsed.message == 'spawned') {
+                            renderPath(parsed.data.path)
                         }
                     }
                 }
 
                 bsDisconnect() {
-                    this.battleServer.close()
+                    if (this.battleServer) {
+                        this.battleServer.close()
+                        this.battleServer = null
+                    }
                 }
 
                 bsSend(message) {
@@ -348,17 +410,21 @@
                                 t.windows[options.initial] = window
                                 t.toggleListener()
 
-                                var storedWindows = localStorage.getObj('windows') || {}
-                                storedWindows[options.initial] = {title: options.title, pos: options.pos}
+                                if (!options.noClose) {
+                                    var storedWindows = localStorage.getObj('windows') || {}
+                                    storedWindows[options.initial] = {title: options.title, pos: options.pos}
 
-                                localStorage.setObj('windows', storedWindows)
+                                    localStorage.setObj('windows', storedWindows)
+                                }
                             } else {
                                 t.windows[options.initial].css('z-index', t.highest++)
 
-                                var storedWindows = localStorage.getObj('windows') || {}
-                                storedWindows[options.initial].zIndex = t.highest
+                                if (!options.noClose) {
+                                    var storedWindows = localStorage.getObj('windows') || {}
+                                    storedWindows[options.initial].zIndex = t.highest
 
-                                localStorage.setObj('windows', storedWindows)
+                                    localStorage.setObj('windows', storedWindows)
+                                }
                             }
                         } else {
                             alert(data.message)
@@ -422,9 +488,11 @@
                             var css = $(event.target).css(['top', 'left'])
 
                             var storedWindows = localStorage.getObj('windows') || {}
-                            storedWindows[$(event.target).attr('initial')].pos = [parseFloat(css.top), parseFloat(css.left)] 
-
-                            localStorage.setObj('windows', storedWindows)
+                            var windows = storedWindows[$(event.target).attr('initial')]
+                            if (windows) {
+                                windows.pos = [parseFloat(css.top), parseFloat(css.left)] 
+                                localStorage.setObj('windows', storedWindows)
+                            }
                         }
                     })
 

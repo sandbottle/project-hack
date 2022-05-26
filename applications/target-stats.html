@@ -69,6 +69,10 @@
         animation: attacked 0.5s linear both alternate;
     }
 
+    .hex:hover svg g path {
+        animation: attacked 0.3s alternate;
+    }
+
     .hex-icon {
         width: 16px;
         height: 16px;
@@ -92,16 +96,29 @@
         background-image: url(/images/connection.svg);
     }
 
+    .hex-icon.core {
+        background-image: url(https://upload.wikimedia.org/wikipedia/commons/e/e6/Feather-core-server.svg);
+    }
+
+    @keyframes attack {
+        from {
+            margin-left: 0px;
+        }
+
+        to {
+            margin-left: 16px;
+        }
+    }
+
+    .hex-icon.attack {
+        animation: attack 0.3s alternate both;
+        animation-iteration-count: infinite;
+    }
+
     .path-num {
-        width: 100%;
-        height: 100%;
         position: absolute;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
-        color: white;
-        z-index: 100;
         font-size: 16px;
+        z-index: 100;
     }
 </style>
 
@@ -123,7 +140,7 @@
     -->
 
     <script>
-        var hexData = {
+        var tileList = {
             0: {
                 class: 'disabled',
                 icon: null
@@ -139,6 +156,10 @@
             3: {
                 class: 'active',
                 icon: 'connection'
+            },
+            4: {
+                class: 'active',
+                icon: 'core'
             }
         }
 
@@ -149,7 +170,7 @@
                 var hexContainer = $('<div class = "hex-container"></div>')
 
                 row.forEach((item, rowIndex) => {
-                    hex = $(`<div class = "hex ${hexData[item].class || ''}" x = "${rowIndex}" y = ${index}><div class = "hex-icon ${hexData[item].icon || ''}"></div><svg width = "2.54703" height = "2.8583801" viewBox = "0 0 0.67390162 0.75627977"><g transform="translate(0,-296.24369)"><path inkscape:connector-curvature = "0" id = "path86" d = "m 0.32029996,296.99806 c -0.009736,-0.003 -0.19478748,-0.10805 -0.27064033,-0.15352 -0.05299413,-0.0318 -0.04961645868,-0.0166 -0.04961645868,-0.22304 0,-0.16835 3.4551707e-4,-0.17627 0.0082693987,-0.18945 0.00930469,-0.0155 0.01987961,-0.0221 0.19197058,-0.12088 0.10562712,-0.0606 0.11949189,-0.0675 0.13673841,-0.0675 0.0172465,0 0.0311115,0.007 0.13673843,0.0675 0.17209114,0.0987 0.18266592,0.10541 0.19197072,0.12088 0.007924,0.0132 0.008269,0.0211 0.008269,0.18945 0,0.16833 -3.4257e-4,0.17628 -0.008269,0.18954 -0.009033,0.0151 -0.0244215,0.0247 -0.20053318,0.12565 -0.10396533,0.0596 -0.1238841,0.068 -0.14489757,0.0614 z" style = "stroke-width:0.00413436" /></g></svg></div>`)
+                    hex = $(`<div class = "hex ${tileList[item].class || ''}" x = "${rowIndex}" y = ${index}><div class = "hex-icon ${tileList[item].icon || ''} attacking"></div><svg width = "2.54703" height = "2.8583801" viewBox = "0 0 0.67390162 0.75627977"><g transform="translate(0,-296.24369)"><path inkscape:connector-curvature = "0" id = "path86" d = "m 0.32029996,296.99806 c -0.009736,-0.003 -0.19478748,-0.10805 -0.27064033,-0.15352 -0.05299413,-0.0318 -0.04961645868,-0.0166 -0.04961645868,-0.22304 0,-0.16835 3.4551707e-4,-0.17627 0.0082693987,-0.18945 0.00930469,-0.0155 0.01987961,-0.0221 0.19197058,-0.12088 0.10562712,-0.0606 0.11949189,-0.0675 0.13673841,-0.0675 0.0172465,0 0.0311115,0.007 0.13673843,0.0675 0.17209114,0.0987 0.18266592,0.10541 0.19197072,0.12088 0.007924,0.0132 0.008269,0.0211 0.008269,0.18945 0,0.16833 -3.4257e-4,0.17628 -0.008269,0.18954 -0.009033,0.0151 -0.0244215,0.0247 -0.20053318,0.12565 -0.10396533,0.0596 -0.1238841,0.068 -0.14489757,0.0614 z" style = "stroke-width:0.00413436" /></g></svg></div>`)
                     hexContainer.append(hex)
                 })
 
@@ -253,5 +274,12 @@
             $('#rendered').append(result)
         })
         */
+
+        function renderPath(path) {
+            path.forEach((now, index) => {
+                $(`.hex[x=${now.x}][y=${now.y}]`).addClass('attacked')
+                $(`.hex[x=${now.x}][y=${now.y}]`).append(`<div class = "path-num" style = "color: white">${index + 1}</div>`)  
+            })
+        }
     </script>
 </div>

@@ -10,8 +10,8 @@ const r = router()
 
 r.get('/', async function(ctx) {
     if (ctx.session.user) {
-        await db.user.findOne({username: ctx.session.user}, {installed: 1}).then(async function(data) {
-            ctx.body = await eta.renderFile('main.html', {useTutorial: ctx.session.newUser || false, user: ctx.session.user, installed: data.installed})
+        await db.user.findOne({username: ctx.session.user}, {installed: 1}).then(async function(result) {
+            ctx.body = await eta.renderFile('main.html', {useTutorial: ctx.session.newUser || false, user: ctx.session.user, installed: result.installed})
         })
     } else {
         ctx.body = await eta.renderFile('index.html')
@@ -26,10 +26,10 @@ r.post('/account/login', async function(ctx) {
     var body = ctx.request.body
 
     if (body.username && body.password) {
-        await db.user.findOne({username: body.username}, {username: 1, password: 1}).then(async function(data) {
-            if (data) {
-                await bcrypt.compare(body.password, data.password).then(async function(result) {
-                    if (result) {
+        await db.user.findOne({username: body.username}, {username: 1, password: 1}).then(async function(result) {
+            if (result) {
+                await bcrypt.compare(body.password, result.password).then(async function(isCorrect) {
+                    if (isCorrect) {
                         ctx.session.user = body.username
                         ctx.body = {status: 'success'}
                     } else {
@@ -44,29 +44,33 @@ r.post('/account/login', async function(ctx) {
 })
 
 r.post('/account/register', async function(ctx) {
-    var body = ctx.request.body
+    if (process.env.ALLOW_REGISTER.toLowerCase() == 'true') {
+        var body = ctx.request.body
 
-    if (/^[a-zA-Z0-9_]*$/.test(body.username) && body.username.length >= 4 && body.password.length >= 8 && body.email.length > 0) {
-        await db.user.findOne({username: body.username}, {username: 1}).then(async function(data) {
-            if (!data) {
-                await bcrypt.hash(body.password, 10).then(async function(hash) {
-                    const newUser = new db.user({
-                        username: body.username, 
-                        password: hash, 
-                        email: body.email,
-                        createdAt: new Date()
+        if (/^[a-zA-Z0-9_]*$/.test(body.username) && body.username.length >= 4 && body.password.length >= 8 && body.email.length > 0) {
+            await db.user.findOne({username: body.username}, {username: 1}).then(async function(result) {
+                if (!result) {
+                    await bcrypt.hash(body.password, 10).then(async function(hash) {
+                        const newUser = new db.user({
+                            username: body.username, 
+                            password: hash, 
+                            email: body.email,
+                            createdAt: new Date()
+                        })
+        
+                        await newUser.save().then(function () {
+                            ctx.session.newUser = true
+                            ctx.session.user = body.username
+                            ctx.body = {status: 'success'}
+                        })
                     })
-    
-                    await newUser.save().then(function () {
-                        ctx.session.newUser = true
-                        ctx.session.user = body.username
-                        ctx.body = {status: 'success'}
-                    })
-                })
-            } else {
-                ctx.body = {status: 'failed', message: 'Username already used'}
-            }
-        }) 
+                } else {
+                    ctx.body = {status: 'failed', message: 'Username already used'}
+                }
+            }) 
+        }
+    } else {
+        ctx.body = {status: 'failed', message: process.env.REGISTER_DISABLED_MESSAGE}
     }
 })
 

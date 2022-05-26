@@ -11,6 +11,36 @@ const mongoose = require('mongoose')
 const MongooseStore = require('koa-session-mongoose')
 const gamehelper = require('./engine/gamefunctions')
 
+// https server
+/*
+const http = require('http')
+const https = require('https')
+const greenlock = require('greenlock-koa').create({
+    version: 'draft-11',
+    // You MUST change this to 'https://acme-v02.api.letsencrypt.org/directory' in production
+    server: 'https://acme-staging-v02.api.letsencrypt.org/directory',
+    email: 'manu@sandbottle.net',
+    agreeTos: true,
+    approveDomains: ['103.186.0.107'],
+   
+    // Join the community to get notified of important updates
+    // and help make greenlock better
+    communityMember: true,
+    configDir: require('os').homedir() + '/acme/etc'
+})
+
+function approveDomains(opts, certs, cb) {
+    if (certs) {
+      opts.domains = certs.altnames
+    } else {
+        opts.email = 'manu@sandbottle.net'
+        opts.agreeTos = true
+    }
+    opts.communityMember = true 
+    cb(null, { options: opts, certs: certs })
+}
+*/
+
 // db
 mongoose.connect(process.env.MONGO_URL, {useNewUrlParser: true, useUnifiedTopology: true})
 global.store = new MongooseStore()
@@ -52,9 +82,18 @@ app.use(require('./routes/applications').routes())
 
 // statics
 app.use(static(path.join(__dirname, 'static')))
+app.use(static(path.join(__dirname, 'errors')))
 
-app.listen(process.env.PORT, function() {
+// const server = https.createServer(greenlock.tlsOptions, greenlock.middleware(app.callback()))
+app.listen(4040, function() {
     var h = new gamehelper()
     h.cleanup()
     console.log('Server started.')
 })
+
+/*
+var redirectHttps = app.use(require('koa-sslify')()).callback()
+http.createServer(greenlock.middleware(redirectHttps)).listen(80, function () {
+    console.log('Listening on port 80 to handle ACME http-01 challenge and redirect to https')
+})
+*/

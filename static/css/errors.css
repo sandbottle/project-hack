@@ -1,0 +1,17 @@
+body {
+    font-family: modeseven;
+    background: var(--bg-light);
+    color: var(--fg);
+}
+
+#error-container {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+}
+
+h1 {
+    color: var(--green);
+    font-size: 400%;
+}

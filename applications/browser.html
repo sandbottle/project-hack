@@ -1,14 +1,17 @@
 <style>
     #browser-window {
         min-width: 700px !important; 
-        min-height: 350px !important;
+        min-height: 400px !important;
         flex-direction: column;
     }
 
     #browser-main {
         width: 100%;
         height: 100%;
-        background: 100%;
+        top: 0;
+        left: 0;
+        display: flex;
+        flex-direction: column;
         position: absolute;
         top: 0;
         left: 0;
@@ -49,20 +52,60 @@
 
     #browser-tab {
         width: 100%;
+        max-width: 100%;
         display: flex;
     }
 
     .browser-tabs {
-        width: max-content;
-        min-width: 33%;
-
-        padding: 8px 16px;
-
-        background: var(--accent);
+        width: 100%;
+        max-width: 33%;
+        padding: 8px;
+        margin: 6px 6px 0px 0px;
+        background: var(--accent-soft);
         box-sizing: border-box;
-        
-        border-top-left-radius: 6px;
-        border-top-right-radius: 6px;
+        border-radius: 3px;
+        position: relative;
+        overflow-x: hidden;
+        height: 32px;
+        transition: 0.2s;
+    }
+
+    .browser-tabs.active {
+        background: var(--accent);
+        transition: 0.2s;
+    }
+
+    .browser-tabs.append {
+        width: 32px;
+        min-width: 32px;
+        cursor: default;
+        user-select: none;
+    }
+
+    .browser-tabs:last-child {
+        margin-right: 0;
+    }
+
+    .browser-tabs:not(.append) span {
+        position: absolute;
+        width: calc(100% - 24px);
+        mask-image: linear-gradient(90deg, var(--accent) 0%, var(--accent) 50%, transparent);
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: clip;
+    }
+
+    .browser-close {
+        position: absolute;
+        right: 0;
+    }
+
+    #browser-tab.close-hidden .browser-close {
+        display: none;
+    }
+
+    .browser-tabs.active .browser-close {
+        display: block !important;
     }
 </style>
 
@@ -70,11 +113,14 @@
     <div id = "browser-main">
         <div id = "browser-header">
             <div id = "browser-tab">
-                <div class = "browser-tabs">
-                    Hello world
+                <div class = "browser-tabs active">
+                    <span>Hello world</span>
+                    <button class = "browser-close">x</button>
                 </div>
-                <div class = "browser-tabs">
-                    Hello world
+                <div class = "browser-tabs append">
+                    <center>
+                        <span>+</span>
+                    </center>
                 </div>
             </div>
 
@@ -98,6 +144,55 @@
                 <input class = "input" id = "browser-url" placeholder = "Search or enter address">
             </div>
         </div>
-        <iframe id = "browser-iframe" height = "100%" width = "100%" src = "/pages/pages.html"></iframe>
+        <iframe id = "browser-iframe" height = "100%" width = "100%" src = "/pages/tos.html"></iframe>
     </div>
 </div>
+
+<script>
+    var tabCount = 1
+
+    function bindListener() {
+        $('.browser-tabs:not(.append)').on('click', function() {
+            activateTab(this)
+        })
+
+        $('.browser-close').on('click', function() {
+            removeTab($(this).parent())
+        })
+    }
+
+    function activateTab(tab) {
+        $('.browser-tabs').removeClass('active')
+        $(tab).addClass('active')
+        tabCount += 1
+        
+        if (tabCount >= 10) {
+            $('#browser-tab').addClass('close-hidden')
+        } else {
+            $('#browser-tab').removeClass('close-hidden')
+        }
+    }
+
+    function removeTab(tab) {
+        tabCount -= 1
+
+        if (tabCount >= 10) {
+            $('#browser-tab').addClass('close-hidden')
+        } else {
+            $('#browser-tab').removeClass('close-hidden')
+        }
+
+        activateTab($(`.browser-tabs:nth-child(${tabCount})`))
+        $(tab).remove()
+    }
+
+    $('.browser-tabs.append').on('click', function() {
+        var tab = $(`<div class = "browser-tabs"><span>New tab</span><button class = "browser-close">x</span></div>`)
+
+        tab.insertBefore(this)
+        activateTab(tab)
+        bindListener()
+    })
+
+    bindListener()
+</script>

@@ -1,8 +1,8 @@
 body {
     margin: 0;
     padding: 0;
-    overflow: hidden;
     font-family: modeseven;
+    overflow-x: hidden;
 }
 
 #main {
@@ -253,4 +253,36 @@ body {
     position: absolute;
     top: 0;
     left: 0;
+}
+
+#why-project-hack {
+    width: 80%;
+    height: 100%;
+    padding: 32px;
+    box-sizing: border-box;
+}
+
+#why-container {
+    display: flex;
+    width: 100%;
+    flex-direction: row;
+    flex-wrap: wrap;
+}
+
+#why-container .window {
+    min-width: 0;
+    width: calc((100% - 48px) / 3);
+    position: relative;
+    margin-right: 16px;
+    margin-bottom: 16px;
+    box-sizing: border-box;
+}
+
+#why-container .window * {
+    box-sizing: border-box;
+}
+
+#why-container .window .content {
+    display: flex;
+    flex-direction: column;
 }
