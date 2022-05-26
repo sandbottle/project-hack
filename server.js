@@ -85,7 +85,7 @@ app.use(static(path.join(__dirname, 'static')))
 app.use(static(path.join(__dirname, 'errors')))
 
 // const server = https.createServer(greenlock.tlsOptions, greenlock.middleware(app.callback()))
-app.listen(4040, function() {
+app.listen(process.env.PORT, function() {
     var h = new gamehelper()
     h.cleanup()
     console.log('Server started.')
